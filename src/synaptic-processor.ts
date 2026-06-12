@@ -49,7 +49,7 @@ export class SynapticProcessor {
    * @param {Float64Array} weights
    * @returns
    */
-  calculateSynapses(weights: Float64Array, threshold) {
+  calculateSynapses(weights: Float64Array, threshold: number) {
     if (this.data.length !== weights.length) {
       throw new RangeError(
         `Data dimension must be ${weights.length}; received ${this.data.length}`
@@ -81,13 +81,13 @@ export class SynapticProcessor {
     return this;
   }
 
-  setOutputExpected(expectedOutput) {
+  setOutputExpected(expectedOutput: number) {
     this.outputExpected = expectedOutput;
 
     return this;
   }
 
-  setLearningFactor(learningFactor) {
+  setLearningFactor(learningFactor: number) {
     if (!Number.isFinite(learningFactor) || learningFactor <= 0) {
       throw new RangeError('Learning factor must be a positive finite number');
     }

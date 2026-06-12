@@ -1,90 +1,73 @@
 import { ActivationFunctionType } from './activation-functions/activation-function';
 import { Neuron } from './neuron';
-import { SynapticProcessor } from './synaptic-processor';
 
 export class Layer {
-  private layers: Neuron[][];
-  private activationFunction: ActivationFunctionType;
-
-  synapticProcessor: SynapticProcessor;
+  neurons: Neuron[];
 
   constructor(
-    activationFunction: ActivationFunctionType = ActivationFunctionType.SIGMOIDAL,
-    learningRate: number
+    size: number,
+    activationFunction: ActivationFunctionType,
+    learningRate: number,
+    momentum: number,
+    random: () => number
   ) {
-    this.layers = [];
-    this.activationFunction = activationFunction;
-    this.synapticProcessor = new SynapticProcessor(this.activationFunction, learningRate);
-  }
-
-  /**
-   * @param {number} numberNeurons
-   * @returns
-   */
-  add(numberNeurons: number) {
-    if (!Number.isInteger(numberNeurons) || numberNeurons < 1) {
+    if (!Number.isInteger(size) || size < 1) {
       throw new RangeError('A layer must contain at least one neuron');
     }
 
-    const layer = this.create(numberNeurons);
-    const indexNewLayer = this.layers.push(layer) - 1;
-    const beforeLayer = this.layers[indexNewLayer - 1];
+    this.neurons = Array.from(
+      { length: size },
+      () => new Neuron(activationFunction, learningRate, momentum, random)
+    );
+  }
 
-    if (beforeLayer === undefined) {
-      return this;
+  get size(): number {
+    return this.neurons.length;
+  }
+
+  get initialized(): boolean {
+    return this.neurons.every((neuron) => neuron.weights !== null);
+  }
+
+  forward(input: Float64Array): Float64Array {
+    return Float64Array.from(this.neurons, (neuron) => neuron.forward(input));
+  }
+
+  calculateOutputDeltas(targets: Float64Array): number {
+    let loss = 0;
+
+    for (let index = 0; index < this.neurons.length; index++) {
+      loss += this.neurons[index].calculateOutputDelta(targets[index]);
     }
 
-    // Apuntar con cada Neuron de la nueva capa a la anterior
-    layer.forEach((neuron: Neuron) => {
-      neuron.inputNeurons = beforeLayer;
+    return loss / this.neurons.length;
+  }
+
+  calculateHiddenDeltas(nextLayer: Layer): void {
+    for (let index = 0; index < this.neurons.length; index++) {
+      this.neurons[index].calculateHiddenDelta(nextLayer.neurons, index);
+    }
+  }
+
+  update(): void {
+    this.neurons.forEach((neuron) => neuron.update());
+  }
+
+  setParameters(weights: number[][], biases: number[]): void {
+    this.neurons.forEach((neuron, index) => neuron.setParameters(weights[index], biases[index]));
+  }
+
+  exportWeights(): number[][] {
+    return this.neurons.map((neuron) => {
+      if (!neuron.weights) {
+        throw new Error('Cannot export an untrained network');
+      }
+
+      return Array.from(neuron.weights);
     });
-
-    // Apuntar con cada neurona de la capa anterior a la nueva capa
-    beforeLayer.forEach((neuron: Neuron) => {
-      neuron.outputNeurons = layer;
-    });
-
-    return this;
   }
 
-  forEach(callback: (layer: Neuron[], index?: number) => void) {
-    for (let idx = 0; idx < this.layers.length; idx++) {
-      callback(this.layers[idx], idx);
-    }
-  }
-
-  /**
-   * @param {number} index
-   * @returns {Neuron[]}
-   */
-  get(index: number): Neuron[] {
-    return this.layers[index];
-  }
-
-  /**
-   * @returns {Neuron[]}
-   */
-  getLast(): Neuron[] {
-    return this.get(this.layers.length - 1);
-  }
-
-  get length(): number {
-    return this.layers.length;
-  }
-
-  /**
-   * @private
-   * @param {number} numberNeurons
-   * @returns {Neuron[]}
-   */
-  private create(numberNeurons: number): Neuron[] {
-    const layer: Neuron[] = [];
-
-    for (let i = 0; i < numberNeurons; i++) {
-      layer[i] = new Neuron(this.activationFunction);
-      layer[i].synapticProcessor = this.synapticProcessor;
-    }
-
-    return layer;
+  exportBiases(): number[] {
+    return this.neurons.map((neuron) => neuron.bias);
   }
 }

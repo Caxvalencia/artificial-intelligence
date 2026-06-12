@@ -12,7 +12,7 @@ navegador.
 ## Características
 
 - Perceptrón de una capa para problemas linealmente separables.
-- Red neuronal multicapa con backpropagation y momentum.
+- Red neuronal multicapa con backpropagation, momentum y múltiples salidas.
 - Funciones de activación binaria, sigmoidal, ReLU y tangente hiperbólica.
 - Importación y exportación de modelos entrenados.
 - Bundle UMD para ejecutar las demos en el navegador.
@@ -98,9 +98,9 @@ Para resolver problemas no lineales se pueden encadenar capas. El siguiente
 ejemplo entrena una red para XNOR:
 
 ```ts
-import { Backpropagation } from './src';
+import { Backpropagation, type TrainingSample } from './src';
 
-const dataset = [
+const dataset: TrainingSample[] = [
   { input: [0, 0], output: 1 },
   { input: [0, 1], output: 0 },
   { input: [1, 0], output: 0 },
@@ -110,6 +110,10 @@ const dataset = [
 const network = new Backpropagation({
   epochs: 15000,
   learningRate: 0.3,
+  momentum: 0.77,
+  seed: 42,
+  shuffle: true,
+  targetLoss: 0.002,
   verbose: false
 });
 
@@ -127,8 +131,9 @@ capa específica para la entrada.
 
 ## API pública
 
-El punto de entrada `src/index.ts` exporta las clases `Perceptron` y
-`Backpropagation`.
+El punto de entrada `src/index.ts` exporta `Perceptron`, `Backpropagation`,
+`ActivationFunctionType` y los tipos públicos de configuración, muestras,
+historial y serialización.
 
 ### `Perceptron`
 
@@ -152,15 +157,19 @@ sean `0` o `1` y que la predicción use la dimensión con la que fue entrenado.
 const network = new Backpropagation();
 ```
 
-| Opción               | Tipo                     | Valor predeterminado | Descripción                                        |
-| -------------------- | ------------------------ | -------------------- | -------------------------------------------------- |
-| `epochs`             | `number`                 | `1000`               | Cantidad de épocas de entrenamiento.               |
-| `activationFunction` | `ActivationFunctionType` | Sigmoidal            | Función aplicada por las neuronas.                 |
-| `learningRate`       | `number`                 | `0.3`                | Factor utilizado para actualizar los pesos.        |
-| `verbose`            | `boolean`                | `false`              | Muestra información de entrenamiento y predicción. |
+| Opción               | Valor predeterminado | Descripción                                             |
+| -------------------- | -------------------- | ------------------------------------------------------- |
+| `epochs`             | `1000`               | Máximo de épocas de entrenamiento.                      |
+| `activationFunction` | `SIGMOIDAL`          | Función aplicada por las neuronas.                      |
+| `learningRate`       | `0.3`                | Factor utilizado para actualizar pesos y biases.        |
+| `momentum`           | `0.77`               | Contribución de la actualización anterior, entre 0 y 1. |
+| `seed`               | Sin definir          | Semilla entera para resultados reproducibles.           |
+| `shuffle`            | `false`              | Mezcla una copia del dataset en cada época.             |
+| `targetLoss`         | Sin definir          | Detiene el entrenamiento al alcanzar esta pérdida.      |
+| `patience`           | Sin definir          | Detiene el entrenamiento tras épocas sin mejora.        |
+| `verbose`            | `false`              | Muestra información periódica.                          |
 
-Los valores predeterminados se aplican al crear la instancia sin argumentos.
-Cuando se entrega un objeto de configuración, `epochs` es obligatorio:
+Todas las opciones son opcionales:
 
 ```ts
 const network = new Backpropagation({
@@ -178,11 +187,24 @@ const network = new Backpropagation({
 | `exportModel()`           | Devuelve capas, umbrales y pesos serializables.        |
 | `importModel(model)`      | Reconstruye una red desde un modelo exportado.         |
 | `error`                   | Pérdida promedio calculada en la última época.         |
-| `history.loss`            | Pérdida promedio guardada para cada época.             |
+| `history.loss`            | Pérdida promedio guardada para cada época ejecutada.   |
+| `history.epochs`          | Número real de épocas ejecutadas.                      |
+| `history.stoppedEarly`    | Indica si finalizó por pérdida objetivo o paciencia.   |
 
 Backpropagation requiere al menos una capa y un dataset no vacío. Todas las
 muestras deben tener la misma dimensión y contener números finitos. El
 entrenamiento crea copias internas, por lo que no modifica el dataset recibido.
+Para una única salida puede usarse un objetivo escalar. Si la última capa tiene
+varias neuronas, cada muestra debe proporcionar un vector de igual dimensión:
+
+```ts
+const dataset: TrainingSample[] = [
+  { input: [0, 1], output: [0, 1] },
+  { input: [1, 0], output: [1, 0] }
+];
+
+new Backpropagation({ epochs: 2000, seed: 7 }).addLayer(3).addLayer(2).learn(dataset);
+```
 
 Las activaciones y actualizaciones también se comprueban durante el
 entrenamiento. Si una suma, pérdida, peso o umbral deja de ser finito, el proceso
@@ -190,18 +212,15 @@ falla explícitamente en lugar de continuar con valores `NaN` o infinitos.
 
 ### Funciones de activación
 
-Internamente existen los siguientes valores de `ActivationFunctionType`:
+La API pública expone los siguientes valores de `ActivationFunctionType`:
 
 - `BINARY`
 - `RELU`
 - `SIGMOIDAL`
 - `HYPERBOLIC_TANGENT`
 
-Actualmente el enum no se exporta desde el punto de entrada público. Para
-experimentar dentro del repositorio puede importarse directamente:
-
 ```ts
-import { ActivationFunctionType } from './src/activation-functions/activation-function';
+import { ActivationFunctionType } from './src';
 ```
 
 La activación binaria está destinada al perceptrón simple. No puede utilizarse
@@ -225,11 +244,20 @@ Formato del modelo:
 
 ```ts
 interface Model {
+  version: 1;
+  config: {
+    activationFunction: ActivationFunctionType;
+    learningRate: number;
+    momentum: number;
+  };
   layers: number[];
-  thresholds: number[][];
+  biases: number[][];
   weights: number[][][];
 }
 ```
+
+La importación también acepta modelos históricos con `thresholds`. Toda nueva
+exportación utiliza el formato versionado con `biases`.
 
 ## Scripts disponibles
 
@@ -286,10 +314,11 @@ conservan como referencia, pero no forman parte de las demos mantenidas.
 │   ├── activation-functions/     # Funciones de activación y derivadas
 │   ├── tests/                    # Pruebas unitarias y ejemplo TensorFlow.js
 │   ├── backpropagation.ts        # Red multicapa y entrenamiento
-│   ├── layer.ts                  # Administración de capas
-│   ├── neuron.ts                 # Neurona usada por backpropagation
+│   ├── layer.ts                  # Forward, gradientes y actualización por capa
+│   ├── neuron.ts                 # Estado independiente de cada neurona
 │   ├── perceptron.ts             # Perceptrón simple
 │   ├── synaptic-processor.ts     # Cálculo de sinapsis y actualización
+│   ├── types.ts                  # Contratos públicos
 │   └── index.ts                  # API pública
 ├── package.json
 ├── pnpm-lock.yaml
@@ -308,11 +337,9 @@ pesos usando el error y el factor de aprendizaje.
 ### Backpropagation
 
 La red realiza una propagación hacia delante para obtener una predicción,
-calcula el error desde la capa de salida hacia las capas anteriores y actualiza
-pesos y umbrales. La implementación usa un factor de momentum fijo de `0.77`.
-
-Los pesos y umbrales iniciales son aleatorios, por lo que el resultado exacto y
-la velocidad de convergencia pueden variar entre ejecuciones.
+calcula todos los deltas de salida, propaga los gradientes hacia las capas
+anteriores y después actualiza pesos y biases. Momentum y orden del dataset son
+configurables. Una semilla permite reproducir inicialización, mezcla y resultado.
 
 ## Desarrollo
 
@@ -336,13 +363,12 @@ Las pruebas principales cubren:
 
 ## Limitaciones conocidas
 
-- El proyecto todavía no expone declaraciones de tipos ni una entrada preparada
-  para instalarse como dependencia externa.
-- `Backpropagation` espera una única salida objetivo por muestra.
+- El proyecto todavía no publica declaraciones compiladas ni una entrada
+  preparada para instalarse como dependencia externa.
 - Los datasets se procesan completos en memoria y sin mini-batches.
-- No existen validaciones exhaustivas para dimensiones incompatibles o modelos
-  importados incorrectos.
-- Algunas partes de la API interna conservan nombres y decisiones históricas.
+- Todas las capas de una red usan la misma función de activación.
+- El estado del optimizador no se serializa; al reanudar entrenamiento, momentum
+  comienza desde cero.
 
 ## Licencia
 

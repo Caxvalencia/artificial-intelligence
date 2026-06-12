@@ -10,7 +10,10 @@ export enum ActivationFunctionType {
   HYPERBOLIC_TANGENT = 'HYPERBOLIC_TANGENT'
 }
 
-const callback = {
+const callback: Record<
+  ActivationFunctionType,
+  { activation: (synapse: number) => number; prime: (synapse: number) => number }
+> = {
   [ActivationFunctionType.BINARY]: Binary,
   [ActivationFunctionType.RELU]: ReLU,
   [ActivationFunctionType.SIGMOIDAL]: Sigmoidal,
@@ -18,9 +21,9 @@ const callback = {
 };
 
 export class ActivationFunction {
-  protected default: string;
-  private callback: Function;
-  private callbackPrime: Function;
+  protected default: ActivationFunctionType;
+  private callback: (synapse: number) => number;
+  private callbackPrime: (synapse: number) => number;
 
   constructor(functionName: ActivationFunctionType = ActivationFunctionType.BINARY) {
     this.default = functionName;
@@ -51,6 +54,18 @@ export class ActivationFunction {
    */
   prime(synapse: number) {
     return this.callbackPrime(synapse);
+  }
+
+  primeFromOutput(output: number): number {
+    if (this.default === ActivationFunctionType.SIGMOIDAL) {
+      return output * (1 - output);
+    }
+
+    if (this.default === ActivationFunctionType.HYPERBOLIC_TANGENT) {
+      return 1 - output * output;
+    }
+
+    return this.prime(output);
   }
 
   private setCallback() {

@@ -1,11 +1,6 @@
 import { ActivationFunctionType } from './activation-functions/activation-function';
 import { SynapticProcessor } from './synaptic-processor';
-
-interface PerceptronTrainingStats {
-  epochs: number;
-  errors: number;
-  converged: boolean;
-}
+import { PerceptronTrainingStats } from './types';
 
 type PerceptronSample = [Float64Array, number];
 

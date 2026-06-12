@@ -1,38 +1,38 @@
 import { assert } from 'chai';
 import { suite, test } from '@testdeck/mocha';
 
-import { Backpropagation } from '../backpropagation';
-import { Neuron } from '../neuron';
-import { ActivationFunctionType } from '../activation-functions/activation-function';
-
-function useSeededRandom(seed: number = 1): () => void {
-  const originalRandom = Math.random;
-
-  Math.random = () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-
-  return () => {
-    Math.random = originalRandom;
-  };
-}
+import { ActivationFunctionType, Backpropagation, SerializedModel, TrainingSample } from '../index';
 
 @suite
 export class BackpropagationImportExportTest {
   @test
-  public validatesModelsBeforeImportingOrExporting() {
+  public validatesModelsBeforeImportingOrExporting(): void {
     const network = new Backpropagation();
 
-    assert.throws(() => network.importModel({} as any), 'Model must contain at least one layer');
+    assert.throws(
+      () => network.importModel({} as SerializedModel),
+      'Model must contain at least one layer'
+    );
     assert.equal(network.layers.length, 0);
     assert.throws(() => network.exportModel(), 'Cannot export a network without layers');
-
-    const untrainedNetwork = new Backpropagation().addLayer(1);
-    assert.throws(() => untrainedNetwork.exportModel(), 'Cannot export an untrained network');
     assert.throws(
-      () => untrainedNetwork.importModel(this.modelData()),
-      'Cannot import a model into a network that already has layers'
+      () => new Backpropagation().addLayer(1).exportModel(),
+      'Cannot export an untrained network'
+    );
+    assert.throws(
+      () =>
+        network.importModel({
+          version: 2,
+          config: {
+            activationFunction: ActivationFunctionType.SIGMOIDAL,
+            learningRate: 0.3,
+            momentum: 0.77
+          },
+          layers: [1],
+          biases: [[0]],
+          weights: [[[1]]]
+        } as unknown as SerializedModel),
+      'Unsupported model version: 2'
     );
     assert.throws(
       () =>
@@ -47,187 +47,84 @@ export class BackpropagationImportExportTest {
   }
 
   @test
-  public importExportModel() {
-    const model = this.modelData();
-    const XOR = new Backpropagation();
-    const modelExported = XOR.importModel(model).exportModel();
+  public importsLegacyModelsAndExportsVersionedModels(): void {
+    const model = new Backpropagation().importModel({
+      layers: [1],
+      thresholds: [[0.5]],
+      weights: [[[1, -1]]]
+    });
+    const exported = model.exportModel();
 
-    assert.sameDeepMembers(model.layers, modelExported.layers, 'Layers');
-    assert.sameDeepMembers(model.weights, modelExported.weights, 'Weights');
-    assert.sameDeepMembers(model.thresholds, modelExported.thresholds, 'Thresholds');
+    assert.equal(exported.version, 1);
+    assert.deepEqual(exported.layers, [1]);
+    assert.deepEqual(exported.biases, [[0.5]]);
+    assert.deepEqual(exported.weights, [[[1, -1]]]);
   }
 
-  @test('given one model data imported should relearning')
-  public givenOneModelDataImportedShouldRelearning() {
-    const model = this.modelData();
+  @test
+  public preservesSigmoidalAndTanhPredictionsAfterRoundTrip(): void {
+    this.assertRoundTrip(ActivationFunctionType.SIGMOIDAL, this.sigmoidDataset());
+    this.assertRoundTrip(ActivationFunctionType.HYPERBOLIC_TANGENT, this.tanhDataset());
+  }
 
-    const dataset = [
+  @test
+  public persistsTrainingConfiguration(): void {
+    const network = new Backpropagation({
+      epochs: 1,
+      activationFunction: ActivationFunctionType.HYPERBOLIC_TANGENT,
+      learningRate: 0.15,
+      momentum: 0.4,
+      seed: 9
+    })
+      .addLayer(2)
+      .addLayer(1)
+      .learn(this.tanhDataset());
+    const restored = new Backpropagation().importModel(network.exportModel());
+
+    assert.equal(restored.activationFunction, ActivationFunctionType.HYPERBOLIC_TANGENT);
+    assert.equal(restored.learningRate, 0.15);
+    assert.equal(restored.momentum, 0.4);
+  }
+
+  private assertRoundTrip(
+    activationFunction: ActivationFunctionType,
+    dataset: TrainingSample[]
+  ): void {
+    const network = new Backpropagation({
+      epochs: 100,
+      activationFunction,
+      seed: 4,
+      shuffle: true
+    })
+      .addLayer(3)
+      .addLayer(1)
+      .learn(dataset);
+    const predictions = dataset.map(({ input }) => network.process(input));
+    const restored = new Backpropagation().importModel(
+      JSON.parse(JSON.stringify(network.exportModel())) as SerializedModel
+    );
+
+    assert.deepEqual(
+      dataset.map(({ input }) => restored.process(input)),
+      predictions
+    );
+  }
+
+  private sigmoidDataset(): TrainingSample[] {
+    return [
       { input: [0, 0], output: 1 },
       { input: [0, 1], output: 0 },
       { input: [1, 0], output: 0 },
       { input: [1, 1], output: 1 }
     ];
-
-    const resultExpected = [
-      { input: [0, 0], output: 0.9822190845688125 },
-      { input: [0, 1], output: 0.01560094500947688 },
-      { input: [1, 0], output: 0.015274557756339846 },
-      { input: [1, 1], output: 0.9951608411056504 }
-    ];
-
-    const XOR = new Backpropagation();
-    XOR.importModel(model).learn(dataset);
-
-    assert.isBelow(XOR.error, 1e-7, 'error');
-
-    resultExpected.forEach(({ input, output }) => {
-      const outputActual = XOR.process(input)[0];
-
-      assert.closeTo(outputActual, output, 1e-3, input + ' -> ' + output);
-    });
   }
 
-  // @test('given one new arquitecture should to learning one XOR logic')
-  // public givenOneNewAcquitectureShouldToLearningOneXorLogic() {
-  //     const dataset = [
-  //         { input: [0, 0], output: 1 },
-  //         { input: [0, 1], output: 0 },
-  //         { input: [1, 0], output: 0 },
-  //         { input: [1, 1], output: 1 }
-  //     ];
-
-  //     const neuronA = new Neuron(ActivationFunctionType.RELU);
-  //     const neuronB = new Neuron(ActivationFunctionType.RELU);
-  //     const neuronC = new Neuron(ActivationFunctionType.RELU);
-
-  //     neuronA.outputNeurons.push(neuronC);
-  //     neuronB.outputNeurons.push(neuronC);
-
-  //     neuronC.outputNeurons.push(neuronA);
-  //     neuronC.outputNeurons.push(neuronB);
-
-  //     function forwardpropagation(data) {
-  //         for (let index = 1; index <= 3; index++) {
-  //             data[2] = neuronC.output();
-
-  //             neuronA.learn(Float64Array.from(data));
-  //             neuronB.learn(Float64Array.from(data));
-  //             neuronC.learn(
-  //                 Float64Array.from([neuronA.output(), neuronB.output()])
-  //             );
-
-  //             if (neuronC.synapse <= neuronC.threshold) {
-  //                 break;
-  //             }
-  //         }
-
-  //         return neuronC.output();
-  //     }
-
-  //     function backpropagation(output) {
-  //         neuronC.error = output - neuronC.output();
-  //         neuronA.error = neuronC.error * neuronC.weights[0];
-  //         neuronB.error = neuronC.error * neuronC.weights[1];
-
-  //         neuronA.recalculateWeights();
-  //         neuronB.recalculateWeights();
-  //         neuronC.recalculateWeights();
-  //     }
-
-  //     const epochs = 2500;
-
-  //     for (let epoch = 1; epoch <= epochs; epoch++) {
-  //         console.log('\nEpoch: ' + epoch);
-
-  //         for (let index = 0; index < dataset.length; index++) {
-  //             const data = dataset[index];
-  //             forwardpropagation(data.input);
-  //             backpropagation(data.output);
-
-  //             console.log(neuronC.output(), data.output);
-  //         }
-  //     }
-  // }
-
-  @test('given one new arquitecture should to learning one NOT logic')
-  public givenOneNewAcquitectureShouldToLearningOneNotLogic() {
-    const restoreRandom = useSeededRandom();
-    const dataset = [
-      { input: [0, 0], output: 1 },
-      { input: [0, 1], output: 0 },
-      { input: [1, 0], output: 0 },
-      { input: [1, 1], output: 1 }
+  private tanhDataset(): TrainingSample[] {
+    return [
+      { input: [-1, -1], output: -1 },
+      { input: [-1, 1], output: 1 },
+      { input: [1, -1], output: 1 },
+      { input: [1, 1], output: -1 }
     ];
-
-    const neuronA = new Neuron(ActivationFunctionType.HYPERBOLIC_TANGENT);
-    neuronA.outputNeurons.push(neuronA);
-
-    // neuronA.output = function(): number {
-    //     return this.synapse;
-    // };
-
-    function forwardpropagation(data) {
-      data[2] = 0;
-
-      for (let index = 1; index <= 100; index++) {
-        neuronA.learn(Float64Array.from(data));
-
-        if (data[2] === neuronA.output()) {
-          break;
-        }
-
-        data[2] = neuronA.output();
-
-        if (data[2] < neuronA.threshold) {
-          break;
-        }
-      }
-
-      return neuronA.output();
-    }
-
-    function backpropagation(output) {
-      neuronA.error = output - neuronA.output();
-      neuronA.recalculateWeights();
-    }
-
-    const epochs = 200;
-
-    for (let epoch = 1; epoch <= epochs; epoch++) {
-      console.log('\nEpoch: ' + epoch);
-      console.log(neuronA.error);
-
-      for (let index = 0; index < dataset.length; index++) {
-        const data = dataset[index];
-        forwardpropagation(data.input);
-        backpropagation(data.output);
-      }
-    }
-    restoreRandom();
-
-    dataset.forEach((data) => {
-      console.log(data, forwardpropagation(data.input));
-
-      assert.equal(
-        data.output,
-        Math.round(forwardpropagation(data.input)),
-        'input: ' + data.input + ' output: ' + data.output
-      );
-    });
-  }
-
-  private modelData() {
-    return {
-      layers: [3, 1],
-      thresholds: [[-0.3658, -0.0281, 0.2527], [-0.2412]],
-      weights: [
-        [
-          [7.76849, -4.66939],
-          [-4.12036, 5.06214],
-          [6.66429, 7.7002]
-        ],
-        [[-11.90173, -12.22545, 15.43677]]
-      ]
-    };
   }
 }

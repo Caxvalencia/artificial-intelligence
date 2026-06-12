@@ -68,7 +68,7 @@ export class PerceptronTest {
   @test
   public testAND() {
     let perceptron = new Perceptron();
-    let data: any = [
+    const data: Array<[number[], number]> = [
       // data and output
       [[0, 0], 0],
       [[0, 1], 0],
@@ -76,19 +76,19 @@ export class PerceptronTest {
       [[1, 1], 1]
     ];
 
-    data.forEach((data) => {
-      perceptron.addData(data[0], data[1]).learn();
+    data.forEach((sample) => {
+      perceptron.addData(sample[0], sample[1]).learn();
     });
 
-    data.forEach((data) => {
-      assert.equal(data[1], perceptron.process(data[0]), data[0] + ' -> ' + data[1]);
+    data.forEach((sample) => {
+      assert.equal(sample[1], perceptron.process(sample[0]), sample[0] + ' -> ' + sample[1]);
     });
   }
 
   @test
   public testOR() {
     let perceptron = new Perceptron();
-    let data: any = [
+    const data: Array<[number[], number]> = [
       // data and output
       [[0, 0], 0],
       [[0, 1], 1],
@@ -96,19 +96,19 @@ export class PerceptronTest {
       [[1, 1], 1]
     ];
 
-    data.forEach((data) => {
-      perceptron.addData(data[0], data[1]).learn();
+    data.forEach((sample) => {
+      perceptron.addData(sample[0], sample[1]).learn();
     });
 
-    data.forEach((data) => {
-      assert.equal(data[1], perceptron.process(data[0]), data[0] + ' -> ' + data[1]);
+    data.forEach((sample) => {
+      assert.equal(sample[1], perceptron.process(sample[0]), sample[0] + ' -> ' + sample[1]);
     });
   }
 
   @test
   public testFailXOR() {
     const perceptron = new Perceptron().setMaxEpochs(10);
-    const data: any = [
+    const data: Array<[number[], number]> = [
       // data and output
       [[0, 0], 1],
       [[0, 1], 0],
@@ -117,8 +117,8 @@ export class PerceptronTest {
     ];
 
     assert.throws(() => {
-      data.forEach((_data) => {
-        perceptron.addData(_data[0], _data[1]).learn();
+      data.forEach((sample) => {
+        perceptron.addData(sample[0], sample[1]).learn();
       });
     }, 'Perceptron did not converge after 10 epochs');
     assert.equal(perceptron.trainingStats.epochs, 10);
