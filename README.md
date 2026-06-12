@@ -143,6 +143,9 @@ El punto de entrada `src/index.ts` exporta las clases `Perceptron` y
 
 Los datos de entrada deben tener siempre la misma longitud.
 
+El perceptrón valida que las entradas contengan números finitos, que las salidas
+sean `0` o `1` y que la predicción use la dimensión con la que fue entrenado.
+
 ### `Backpropagation`
 
 ```ts
@@ -176,6 +179,10 @@ const network = new Backpropagation({
 | `importModel(model)`      | Reconstruye una red desde un modelo exportado.         |
 | `error`                   | Pérdida promedio calculada en la última época.         |
 | `history.loss`            | Pérdida promedio guardada para cada época.             |
+
+Backpropagation requiere al menos una capa y un dataset no vacío. Todas las
+muestras deben tener la misma dimensión y contener números finitos. El
+entrenamiento crea copias internas, por lo que no modifica el dataset recibido.
 
 ### Funciones de activación
 

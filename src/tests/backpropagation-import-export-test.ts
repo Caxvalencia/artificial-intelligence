@@ -21,6 +21,32 @@ function useSeededRandom(seed: number = 1): () => void {
 @suite
 export class BackpropagationImportExportTest {
   @test
+  public validatesModelsBeforeImportingOrExporting() {
+    const network = new Backpropagation();
+
+    assert.throws(() => network.importModel({} as any), 'Model must contain at least one layer');
+    assert.equal(network.layers.length, 0);
+    assert.throws(() => network.exportModel(), 'Cannot export a network without layers');
+
+    const untrainedNetwork = new Backpropagation().addLayer(1);
+    assert.throws(() => untrainedNetwork.exportModel(), 'Cannot export an untrained network');
+    assert.throws(
+      () => untrainedNetwork.importModel(this.modelData()),
+      'Cannot import a model into a network that already has layers'
+    );
+    assert.throws(
+      () =>
+        network.importModel({
+          layers: [1],
+          thresholds: [[0]],
+          weights: [[[Number.NaN]]]
+        }),
+      'Model layer 0 neuron 0 weights must contain only finite numbers'
+    );
+    assert.equal(network.layers.length, 0);
+  }
+
+  @test
   public importExportModel() {
     const model = this.modelData();
     const XOR = new Backpropagation();

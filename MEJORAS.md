@@ -21,7 +21,7 @@ pnpm production
 | M-02 | Alta      | Reemplazar entrenamiento recursivo del perceptrón | Completada |
 | M-03 | Media     | Corregir conteo de épocas y pérdida               | Completada |
 | M-04 | Alta      | Persistir configuración completa del modelo       | Pendiente  |
-| M-05 | Media     | Validar entradas, datasets y modelos              | Pendiente  |
+| M-05 | Media     | Validar entradas, datasets y modelos              | Completada |
 | M-06 | Media     | Mejorar estabilidad numérica                      | Pendiente  |
 | M-07 | Alta      | Soportar múltiples neuronas de salida             | Pendiente  |
 | M-08 | Baja      | Hacer configurable el entrenamiento               | Pendiente  |
@@ -225,6 +225,16 @@ resultados silenciosamente incorrectos o valores `NaN`.
 - Todos los casos inválidos anteriores tienen una prueba.
 - Ninguna entrada inválida produce errores internos genéricos.
 - `Backpropagation.learn()` no muta el dataset recibido.
+
+**Decisión implementada**
+
+- Perceptron valida datos, salidas, dimensiones y estado antes de entrenar o
+  predecir.
+- Backpropagation valida configuración, capas, datasets, dimensiones y valores
+  finitos.
+- Los modelos se validan completamente antes de modificar la red.
+- Backpropagation crea copias internas de las entradas y no modifica el dataset
+  recibido.
 
 ## M-06: Mejorar estabilidad numérica
 

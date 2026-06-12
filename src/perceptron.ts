@@ -7,8 +7,10 @@ interface PerceptronTrainingStats {
   converged: boolean;
 }
 
+type PerceptronSample = [Float64Array, number];
+
 export class Perceptron {
-  dataStack: any[];
+  dataStack: PerceptronSample[];
   weights: Float64Array;
   threshold: number;
   synapticProcessor: SynapticProcessor;
@@ -27,13 +29,29 @@ export class Perceptron {
     this.trainingStats = { epochs: 0, errors: 0, converged: false };
   }
 
-  addData(data: Float64Array, output: number) {
-    this.dataStack.push([data, output]);
+  addData(data: ArrayLike<number>, output: number) {
+    const normalizedData = this.normalizeData(data, 'Training data');
+
+    if (output !== 0 && output !== 1) {
+      throw new RangeError('Perceptron output must be either 0 or 1');
+    }
+
+    if (this.dataStack.length > 0 && normalizedData.length !== this.dataStack[0][0].length) {
+      throw new RangeError(
+        `Training data dimension must be ${this.dataStack[0][0].length}; received ${normalizedData.length}`
+      );
+    }
+
+    this.dataStack.push([normalizedData, output]);
 
     return this;
   }
 
   learn() {
+    if (this.dataStack.length === 0) {
+      throw new Error('Perceptron requires at least one training sample');
+    }
+
     if (!this.weights) {
       this.assignWeights();
     }
@@ -76,15 +94,27 @@ export class Perceptron {
     );
   }
 
-  process(data: Float64Array) {
+  process(data: ArrayLike<number>) {
+    if (!this.weights || !Number.isFinite(this.threshold)) {
+      throw new Error('Perceptron must be trained or configured before processing data');
+    }
+
+    const normalizedData = this.normalizeData(data, 'Process data');
+
+    if (normalizedData.length !== this.weights.length) {
+      throw new RangeError(
+        `Process data dimension must be ${this.weights.length}; received ${normalizedData.length}`
+      );
+    }
+
     return this.synapticProcessor
-      .setData(data)
+      .setData(normalizedData)
       .calculateSynapses(this.weights, this.threshold)
       .output();
   }
 
-  setWeights(weights: Float64Array) {
-    this.weights = weights;
+  setWeights(weights: ArrayLike<number>) {
+    this.weights = this.normalizeData(weights, 'Weights');
 
     return this;
   }
@@ -128,5 +158,21 @@ export class Perceptron {
     this.funcBack();
 
     return this;
+  }
+
+  private normalizeData(data: ArrayLike<number>, label: string): Float64Array {
+    if (data == null || typeof data.length !== 'number' || data.length === 0) {
+      throw new RangeError(`${label} must contain at least one value`);
+    }
+
+    const normalizedData = new Float64Array(data);
+
+    for (let index = 0; index < normalizedData.length; index++) {
+      if (!Number.isFinite(normalizedData[index])) {
+        throw new RangeError(`${label} must contain only finite numbers`);
+      }
+    }
+
+    return normalizedData;
   }
 }

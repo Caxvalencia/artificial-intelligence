@@ -42,6 +42,12 @@ export class SynapticProcessor {
    * @returns
    */
   calculateSynapses(weights: Float64Array, threshold) {
+    if (this.data.length !== weights.length) {
+      throw new RangeError(
+        `Data dimension must be ${weights.length}; received ${this.data.length}`
+      );
+    }
+
     this.synapse = 0;
 
     for (let i = 0; i < weights.length; i++) {

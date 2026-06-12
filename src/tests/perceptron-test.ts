@@ -6,6 +6,53 @@ import { Perceptron } from '../perceptron';
 @suite
 export class PerceptronTest {
   @test
+  public validatesTrainingData() {
+    const perceptron = new Perceptron();
+
+    assert.throws(() => perceptron.learn(), 'Perceptron requires at least one training sample');
+    assert.throws(
+      () => perceptron.addData([1, Number.NaN], 1),
+      'Training data must contain only finite numbers'
+    );
+    assert.throws(() => perceptron.addData([1], 2), 'Perceptron output must be either 0 or 1');
+
+    perceptron.addData([1, 0], 1);
+    assert.throws(
+      () => perceptron.addData([1], 1),
+      'Training data dimension must be 2; received 1'
+    );
+  }
+
+  @test
+  public validatesProcessStateAndDimensions() {
+    const perceptron = new Perceptron();
+
+    assert.throws(
+      () => perceptron.process([1]),
+      'Perceptron must be trained or configured before processing data'
+    );
+
+    perceptron.setWeights([1, 1]);
+    perceptron.threshold = 0;
+
+    assert.throws(() => perceptron.process([1]), 'Process data dimension must be 2; received 1');
+    assert.throws(
+      () => perceptron.process([1, Number.POSITIVE_INFINITY]),
+      'Process data must contain only finite numbers'
+    );
+  }
+
+  @test
+  public copiesTrainingData() {
+    const input = [1, 0];
+    const perceptron = new Perceptron().addData(input, 1);
+
+    input[0] = 0;
+
+    assert.deepEqual(Array.from(perceptron.dataStack[0][0]), [1, 0]);
+  }
+
+  @test
   public testAND() {
     let perceptron = new Perceptron();
     let data: any = [

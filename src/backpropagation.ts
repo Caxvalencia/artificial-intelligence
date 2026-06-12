@@ -19,6 +19,16 @@ interface BackpropagationHistory {
   loss: number[];
 }
 
+interface TrainingSample {
+  input: ArrayLike<number>;
+  output: number;
+}
+
+interface NormalizedTrainingSample {
+  input: Float64Array;
+  output: number;
+}
+
 ('use strict');
 export class Backpropagation {
   layers: Layer;
@@ -40,21 +50,42 @@ export class Backpropagation {
       verbose: false
     }
   ) {
+    const epochs = config.epochs;
+    const activationFunction = config.activationFunction ?? ActivationFunctionType.SIGMOIDAL;
+    const learningRate = config.learningRate ?? 0.3;
+    const verbose = config.verbose ?? false;
+
+    if (!Number.isInteger(epochs) || epochs < 0) {
+      throw new RangeError('epochs must be a non-negative integer');
+    }
+
+    if (!Object.values(ActivationFunctionType).includes(activationFunction)) {
+      throw new RangeError(`Unknown activation function: ${activationFunction}`);
+    }
+
+    if (!Number.isFinite(learningRate) || learningRate <= 0) {
+      throw new RangeError('learningRate must be a positive finite number');
+    }
+
     this.error = 0;
-    this.activationFunction = config.activationFunction;
-    this.layers = new Layer(this.activationFunction, config.learningRate);
-    this.epochs = config.epochs;
-    this.verbose = config.verbose;
+    this.activationFunction = activationFunction;
+    this.layers = new Layer(this.activationFunction, learningRate);
+    this.epochs = epochs;
+    this.verbose = verbose;
     this.history = { loss: [] };
   }
 
-  learn(dataset: Array<{ input: any; output: number }>) {
-    this.datasetInputToFloatArray(dataset);
+  learn(dataset: TrainingSample[]) {
+    if (this.layers.length === 0) {
+      throw new Error('Backpropagation requires at least one layer before training');
+    }
+
+    const normalizedDataset = this.normalizeDataset(dataset);
     this.history.loss = [];
     this.error = 0;
 
     for (let epoch = 1; epoch <= this.epochs; epoch++) {
-      this.error = this.runEpoch(dataset);
+      this.error = this.runEpoch(normalizedDataset);
       this.history.loss.push(this.error);
 
       if (this.verbose && epoch % 1000 === 0) {
@@ -65,21 +96,39 @@ export class Backpropagation {
     return this;
   }
 
-  process(data) {
+  process(data: ArrayLike<number>) {
+    if (this.layers.length === 0) {
+      throw new Error('Backpropagation requires at least one layer before processing data');
+    }
+
+    const firstNeuron = this.layers.get(0)[0];
+
+    if (!firstNeuron.weights) {
+      throw new Error('Backpropagation must be trained or imported before processing data');
+    }
+
+    this.assertFiniteValues(data, 'Process data');
+
+    if (data.length !== firstNeuron.weights.length) {
+      throw new RangeError(
+        `Process data dimension must be ${firstNeuron.weights.length}; received ${data.length}`
+      );
+    }
+
     let outputs: number[] = [];
-    data = new Float64Array(data);
+    let currentData = new Float64Array(data);
 
     if (this.verbose) {
-      console.log(data);
+      console.log(currentData);
     }
 
     this.layers.forEach((layer: Neuron[]) => {
       if (outputs.length > 0) {
-        data = new Float64Array(outputs);
+        currentData = new Float64Array(outputs);
         outputs = [];
       }
 
-      this.layers.synapticProcessor.setData(data);
+      this.layers.synapticProcessor.setData(currentData);
 
       for (let index = 0; index < layer.length; index++) {
         const neuron = layer[index];
@@ -105,6 +154,12 @@ export class Backpropagation {
    * @returns {this}
    */
   importModel(model: ModelType): this {
+    this.validateModel(model);
+
+    if (this.layers.length > 0) {
+      throw new Error('Cannot import a model into a network that already has layers');
+    }
+
     model.layers.forEach((layer) => {
       this.addLayer(layer);
     });
@@ -125,6 +180,10 @@ export class Backpropagation {
    * @returns {ModelType}
    */
   exportModel(): ModelType {
+    if (this.layers.length === 0) {
+      throw new Error('Cannot export a network without layers');
+    }
+
     let model: ModelType = {
       layers: [],
       thresholds: [],
@@ -141,6 +200,10 @@ export class Backpropagation {
       let layerWeights = model.weights[indexLayerWeights - 1];
 
       layer.forEach((neuron) => {
+        if (!neuron.weights || !Number.isFinite(neuron.threshold)) {
+          throw new Error('Cannot export an untrained network');
+        }
+
         layerWeights.push(Array.from(neuron.weights));
         layerThresholds.push(neuron.threshold);
       });
@@ -150,20 +213,10 @@ export class Backpropagation {
   }
 
   /**
-   * @param {Array<{ input: any; output: number }>} dataset
-   */
-  datasetInputToFloatArray(dataset: Array<{ input: any; output: number }>) {
-    for (let index = 0; index < dataset.length; index++) {
-      const data = dataset[index];
-      data.input = new Float64Array(data.input);
-    }
-  }
-
-  /**
    * @private
    * @param {Array<{ input: Float64Array; output: number }>} dataset
    */
-  private runEpoch(dataset: Array<{ input: Float64Array; output: number }>) {
+  private runEpoch(dataset: NormalizedTrainingSample[]) {
     let totalLoss = 0;
 
     for (let dataIdx = 0; dataIdx < dataset.length; dataIdx++) {
@@ -227,5 +280,109 @@ export class Backpropagation {
     }
 
     return sumErrors / 2;
+  }
+
+  private normalizeDataset(dataset: TrainingSample[]): NormalizedTrainingSample[] {
+    if (!Array.isArray(dataset) || dataset.length === 0) {
+      throw new RangeError('Dataset must contain at least one training sample');
+    }
+
+    let inputDimension: number;
+
+    return dataset.map((sample, index) => {
+      if (!sample || sample.input == null) {
+        throw new TypeError(`Dataset sample ${index} must contain input and output`);
+      }
+
+      this.assertFiniteValues(sample.input, `Dataset sample ${index} input`);
+
+      if (!Number.isFinite(sample.output)) {
+        throw new RangeError(`Dataset sample ${index} output must be a finite number`);
+      }
+
+      if (inputDimension === undefined) {
+        inputDimension = sample.input.length;
+      } else if (sample.input.length !== inputDimension) {
+        throw new RangeError(
+          `Dataset sample ${index} input dimension must be ${inputDimension}; ` +
+            `received ${sample.input.length}`
+        );
+      }
+
+      return {
+        input: new Float64Array(sample.input),
+        output: sample.output
+      };
+    });
+  }
+
+  private validateModel(model: ModelType) {
+    if (!model || !Array.isArray(model.layers) || model.layers.length === 0) {
+      throw new TypeError('Model must contain at least one layer');
+    }
+
+    if (
+      !Array.isArray(model.weights) ||
+      !Array.isArray(model.thresholds) ||
+      model.weights.length !== model.layers.length ||
+      model.thresholds.length !== model.layers.length
+    ) {
+      throw new RangeError('Model layers, weights and thresholds must have matching lengths');
+    }
+
+    let expectedWeightCount: number;
+
+    model.layers.forEach((numberNeurons, layerIndex) => {
+      if (!Number.isInteger(numberNeurons) || numberNeurons < 1) {
+        throw new RangeError(`Model layer ${layerIndex} must contain at least one neuron`);
+      }
+
+      const layerWeights = model.weights[layerIndex];
+      const layerThresholds = model.thresholds[layerIndex];
+
+      if (
+        !Array.isArray(layerWeights) ||
+        !Array.isArray(layerThresholds) ||
+        layerWeights.length !== numberNeurons ||
+        layerThresholds.length !== numberNeurons
+      ) {
+        throw new RangeError(`Model layer ${layerIndex} dimensions do not match its neuron count`);
+      }
+
+      layerThresholds.forEach((threshold) => {
+        if (!Number.isFinite(threshold)) {
+          throw new RangeError(`Model layer ${layerIndex} thresholds must be finite numbers`);
+        }
+      });
+
+      layerWeights.forEach((weights, neuronIndex) => {
+        this.assertFiniteValues(weights, `Model layer ${layerIndex} neuron ${neuronIndex} weights`);
+
+        if (expectedWeightCount === undefined) {
+          expectedWeightCount = weights.length;
+        }
+
+        if (weights.length !== expectedWeightCount) {
+          throw new RangeError(
+            `Model layer ${layerIndex} neuron ${neuronIndex} must have ` +
+              `${expectedWeightCount} weights; received ${weights.length}`
+          );
+        }
+      });
+
+      expectedWeightCount = numberNeurons;
+    });
+  }
+
+  private assertFiniteValues(values: ArrayLike<number>, label: string) {
+    if (values == null || typeof values.length !== 'number' || values.length === 0) {
+      throw new RangeError(`${label} must contain at least one value`);
+    }
+
+    for (let index = 0; index < values.length; index++) {
+      if (!Number.isFinite(values[index])) {
+        throw new RangeError(`${label} must contain only finite numbers`);
+      }
+    }
   }
 }

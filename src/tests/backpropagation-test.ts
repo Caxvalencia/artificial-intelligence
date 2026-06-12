@@ -20,6 +20,72 @@ function useSeededRandom(seed: number = 2): () => void {
 @suite
 export class BackpropagationTest {
   @test
+  public validatesConfigurationAndLayers() {
+    assert.throws(
+      () => new Backpropagation({ epochs: -1 }),
+      'epochs must be a non-negative integer'
+    );
+    assert.throws(
+      () => new Backpropagation({ epochs: 1, learningRate: 0 }),
+      'learningRate must be a positive finite number'
+    );
+    assert.throws(
+      () => new Backpropagation({ epochs: 1 }).addLayer(0),
+      'A layer must contain at least one neuron'
+    );
+  }
+
+  @test
+  public validatesDatasetWithoutMutatingIt() {
+    const network = new Backpropagation({ epochs: 1 }).addLayer(1);
+    const input = [1, 0];
+    const dataset = [{ input, output: 1 }];
+
+    network.learn(dataset);
+
+    assert.strictEqual(dataset[0].input, input);
+    assert.isArray(dataset[0].input);
+    assert.throws(() => network.learn([]), 'Dataset must contain at least one training sample');
+    assert.throws(
+      () =>
+        network.learn([
+          { input: [1, 0], output: 1 },
+          { input: [1], output: 0 }
+        ]),
+      'Dataset sample 1 input dimension must be 2; received 1'
+    );
+    assert.throws(
+      () => network.learn([{ input: [Number.NaN], output: 1 }]),
+      'Dataset sample 0 input must contain only finite numbers'
+    );
+    assert.throws(
+      () => network.learn([{ input: [1], output: Number.POSITIVE_INFINITY }]),
+      'Dataset sample 0 output must be a finite number'
+    );
+  }
+
+  @test
+  public validatesTrainingAndProcessState() {
+    assert.throws(
+      () => new Backpropagation({ epochs: 1 }).learn([{ input: [1], output: 1 }]),
+      'Backpropagation requires at least one layer before training'
+    );
+    assert.throws(
+      () => new Backpropagation({ epochs: 1 }).process([1]),
+      'Backpropagation requires at least one layer before processing data'
+    );
+
+    const network = new Backpropagation({ epochs: 1 }).addLayer(1);
+    assert.throws(
+      () => network.process([1]),
+      'Backpropagation must be trained or imported before processing data'
+    );
+
+    network.learn([{ input: [1, 0], output: 1 }]);
+    assert.throws(() => network.process([1]), 'Process data dimension must be 2; received 1');
+  }
+
+  @test
   public runsExactlyConfiguredEpochs() {
     const dataset = [{ input: [1], output: 1 }];
     const zeroEpochNetwork = new Backpropagation({ epochs: 0 }).addLayer(1);

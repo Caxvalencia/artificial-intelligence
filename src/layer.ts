@@ -22,6 +22,10 @@ export class Layer {
    * @returns
    */
   add(numberNeurons: number) {
+    if (!Number.isInteger(numberNeurons) || numberNeurons < 1) {
+      throw new RangeError('A layer must contain at least one neuron');
+    }
+
     const layer = this.create(numberNeurons);
     const indexNewLayer = this.layers.push(layer) - 1;
     const beforeLayer = this.layers[indexNewLayer - 1];
@@ -62,6 +66,10 @@ export class Layer {
    */
   getLast(): Neuron[] {
     return this.get(this.layers.length - 1);
+  }
+
+  get length(): number {
+    return this.layers.length;
   }
 
   /**
