@@ -174,8 +174,8 @@ const network = new Backpropagation({
 | `process(data)`           | Devuelve un arreglo con las salidas de la última capa. |
 | `exportModel()`           | Devuelve capas, umbrales y pesos serializables.        |
 | `importModel(model)`      | Reconstruye una red desde un modelo exportado.         |
-| `error`                   | Error calculado en la última muestra procesada.        |
-| `history.loss`            | Historial del error guardado durante el entrenamiento. |
+| `error`                   | Pérdida promedio calculada en la última época.         |
+| `history.loss`            | Pérdida promedio guardada para cada época.             |
 
 ### Funciones de activación
 

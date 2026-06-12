@@ -20,6 +20,41 @@ function useSeededRandom(seed: number = 2): () => void {
 @suite
 export class BackpropagationTest {
   @test
+  public runsExactlyConfiguredEpochs() {
+    const dataset = [{ input: [1], output: 1 }];
+    const zeroEpochNetwork = new Backpropagation({ epochs: 0 }).addLayer(1);
+
+    zeroEpochNetwork.learn(dataset);
+
+    assert.deepEqual(zeroEpochNetwork.history.loss, []);
+    assert.equal(zeroEpochNetwork.error, 0);
+    assert.isNull(zeroEpochNetwork.layers.get(0)[0].weights);
+
+    const network = new Backpropagation({ epochs: 3 }).addLayer(1);
+    network.learn(dataset);
+
+    assert.lengthOf(network.history.loss, 3);
+    assert.equal(network.error, network.history.loss[2]);
+  }
+
+  @test
+  public storesAverageLossForEveryEpoch() {
+    const network = new Backpropagation({ epochs: 1 }).addLayer(1);
+    const sampleLosses = [2, 4];
+    const backpropagation = (network as any).backpropagation.bind(network);
+
+    (network as any).backpropagation = () => sampleLosses.shift();
+    network.learn([
+      { input: [0], output: 0 },
+      { input: [1], output: 1 }
+    ]);
+    (network as any).backpropagation = backpropagation;
+
+    assert.deepEqual(network.history.loss, [3]);
+    assert.equal(network.error, 3);
+  }
+
+  @test
   public rejectsBinaryActivation() {
     const network = new Backpropagation({
       epochs: 1,

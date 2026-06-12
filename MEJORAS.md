@@ -19,7 +19,7 @@ pnpm production
 | ---- | --------- | ------------------------------------------------- | ---------- |
 | M-01 | Alta      | Corregir derivadas de activación                  | Completada |
 | M-02 | Alta      | Reemplazar entrenamiento recursivo del perceptrón | Completada |
-| M-03 | Media     | Corregir conteo de épocas y pérdida               | Pendiente  |
+| M-03 | Media     | Corregir conteo de épocas y pérdida               | Completada |
 | M-04 | Alta      | Persistir configuración completa del modelo       | Pendiente  |
 | M-05 | Media     | Validar entradas, datasets y modelos              | Pendiente  |
 | M-06 | Media     | Mejorar estabilidad numérica                      | Pendiente  |
@@ -130,6 +130,14 @@ de alcanzar el límite configurado.
 - `history.loss.length === epochs`.
 - Cada valor de `history.loss` representa el promedio del dataset completo.
 - Existen pruebas para cero, una y varias épocas.
+
+**Decisión implementada**
+
+- Backpropagation ejecuta exactamente el número de épocas configurado.
+- `runEpoch()` devuelve la pérdida promedio de las muestras procesadas.
+- `error` representa la pérdida promedio de la última época.
+- `history.loss` se reinicia al comenzar cada entrenamiento y guarda una entrada
+  por época.
 
 ## M-04: Persistir configuración completa del modelo
 

@@ -15,6 +15,10 @@ interface BackpropagationConfig {
   verbose?: boolean;
 }
 
+interface BackpropagationHistory {
+  loss: number[];
+}
+
 ('use strict');
 export class Backpropagation {
   layers: Layer;
@@ -23,7 +27,7 @@ export class Backpropagation {
   error: number;
   verbose: boolean;
 
-  history: any;
+  history: BackpropagationHistory;
 
   /**
    * @construtor
@@ -46,24 +50,16 @@ export class Backpropagation {
 
   learn(dataset: Array<{ input: any; output: number }>) {
     this.datasetInputToFloatArray(dataset);
+    this.history.loss = [];
+    this.error = 0;
 
-    this.runEpoch(dataset);
-    let counterEpochs = 1;
-
-    while (counterEpochs <= this.epochs) {
+    for (let epoch = 1; epoch <= this.epochs; epoch++) {
+      this.error = this.runEpoch(dataset);
       this.history.loss.push(this.error);
 
-      counterEpochs++;
-
-      if (this.verbose && counterEpochs % 1000 === 0) {
-        console.log(this.error, counterEpochs);
+      if (this.verbose && epoch % 1000 === 0) {
+        console.log(this.error, epoch);
       }
-
-      // if (this.error < 0.0001) {
-      //     break;
-      // }
-
-      this.runEpoch(dataset);
     }
 
     return this;
@@ -168,11 +164,13 @@ export class Backpropagation {
    * @param {Array<{ input: Float64Array; output: number }>} dataset
    */
   private runEpoch(dataset: Array<{ input: Float64Array; output: number }>) {
+    let totalLoss = 0;
+
     for (let dataIdx = 0; dataIdx < dataset.length; dataIdx++) {
       const data = dataset[dataIdx];
 
       this.forwardpropagation(data);
-      this.backpropagation(data.output);
+      totalLoss += this.backpropagation(data.output);
 
       this.layers.forEach((layer) => {
         for (let neuronIdx = 0; neuronIdx < layer.length; neuronIdx++) {
@@ -181,6 +179,8 @@ export class Backpropagation {
         }
       });
     }
+
+    return totalLoss / dataset.length;
   }
 
   /**
@@ -213,7 +213,7 @@ export class Backpropagation {
    * @private
    * @param {number} output
    */
-  private backpropagation(output: number) {
+  private backpropagation(output: number): number {
     const lastLayer = this.layers.getLast();
     let sumErrors = 0;
 
@@ -226,6 +226,6 @@ export class Backpropagation {
       sumErrors += neuron.error * neuron.error;
     }
 
-    this.error = sumErrors / 2;
+    return sumErrors / 2;
   }
 }
