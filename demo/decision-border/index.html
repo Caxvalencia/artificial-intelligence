@@ -1,160 +1,97 @@
 <!doctype html>
-<html>
+<html lang="es">
   <head>
-    <style>
-      #perceptron {
-        width: 100%;
-        height: 100%;
-        border: 1px solid #ccc;
-        cursor: pointer;
-      }
-    </style>
-
-    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dibuja una frontera | Laboratorio de IA</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23b7ed62'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial' font-size='25' font-weight='700' fill='%23142c29'%3EAI%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="../example.css" />
   </head>
+  <body class="example-page">
+    <header class="example-header">
+      <nav class="example-nav shell">
+        <a class="brand" href="../"><span class="brand-mark">AI</span>Laboratorio de IA</a>
+        <a class="back-link" href="../">← Volver al laboratorio</a>
+      </nav>
+      <div class="example-intro shell">
+        <div>
+          <p class="eyebrow">Perceptrón interactivo</p>
+          <h1>Dibuja una frontera de decisión.</h1>
+        </div>
+        <p>
+          Añade ejemplos de dos clases. El perceptrón ajustará una línea para separarlos y podrás
+          probar puntos nuevos sobre el mapa.
+        </p>
+      </div>
+    </header>
 
-  <body>
-    <div class="containter">
-      <div class="row">
-        <div class="col-md-9">
-          <h3 class="text-center">Perceptron - Decision border</h3>
-
-          <div class="col-md-8 col-md-offset-2">
-            <div class="panel panel-default">
-              <canvas id="perceptron" resize></canvas>
+    <main class="example-main shell">
+      <div class="example-layout">
+        <section class="example-panel card">
+          <div class="card-heading">
+            <div>
+              <span class="label">Mapa interactivo</span>
+              <h3>Haz clic para añadir un punto</h3>
+            </div>
+            <div class="legend">
+              <span><i class="legend-dot class-zero"></i>Clase 0</span>
+              <span><i class="legend-dot class-one"></i>Clase 1</span>
             </div>
           </div>
-
-          <div class="col-md-12">
-            <h3>
-              <p>
-                <code>Clic</code>: Add
-                <span style="color: red">red</span>
-                point
-              </p>
-
-              <p>
-                <code>Shift</code> + <code>Clic</code>: Add
-                <span style="color: green">green</span>
-                point
-              </p>
-
-              <p>
-                <code>Ctrl</code> + <code>Clic</code>: Add
-                <span style="color: #00a">blue</span>
-                point of test
-              </p>
-            </h3>
+          <div class="canvas-wrap">
+            <canvas class="large-canvas" id="border-canvas" width="900" height="560"></canvas>
           </div>
-        </div>
+          <p class="canvas-hint">
+            La zona sombreada muestra la predicción y la línea marca la frontera aprendida.
+          </p>
+        </section>
 
-        <div class="col-md-3">
-          <div class="table-responsive" style="height: 500px; overflow: auto">
-            <table class="table table-hover" style="cursor: pointer">
-              <thead>
-                <th>
-                  X
-                  <sub>1</sub>
-                </th>
-                <th>
-                  X
-                  <sub>2</sub>
-                </th>
-                <th>Y</th>
-              </thead>
-
-              <tbody class="view-data"></tbody>
-            </table>
-          </div>
-        </div>
+        <aside class="example-panel card side-panel">
+          <section class="panel-section">
+            <p class="panel-title">Herramienta activa</p>
+            <div class="tool-list">
+              <button class="tool-button active" data-mode="0" type="button">
+                <i class="tool-dot tool-zero"></i>Añadir clase 0
+              </button>
+              <button class="tool-button" data-mode="1" type="button">
+                <i class="tool-dot tool-one"></i>Añadir clase 1
+              </button>
+              <button class="tool-button" data-mode="test" type="button">
+                <i class="tool-dot tool-test"></i>Probar predicción
+              </button>
+            </div>
+          </section>
+          <section class="panel-section">
+            <p class="panel-title">Estado del modelo</p>
+            <div class="metric-list">
+              <div class="metric-row">
+                <span>Ejemplos</span><strong id="sample-count">0</strong>
+              </div>
+              <div class="metric-row"><span>Épocas</span><strong id="epoch-count">—</strong></div>
+              <div class="metric-row">
+                <span>Convergencia</span><strong id="convergence">—</strong>
+              </div>
+            </div>
+            <p class="status-message" id="status-message">
+              Añade puntos de ambas clases para comenzar el entrenamiento.
+            </p>
+          </section>
+          <section class="panel-section">
+            <button class="action-button" id="preset-button" type="button">Cargar ejemplo</button>
+            <button class="ghost-button" id="clear-button" type="button">Limpiar mapa</button>
+          </section>
+          <section class="panel-section">
+            <p class="panel-title">Últimos puntos</p>
+            <div class="sample-list" id="sample-list"></div>
+          </section>
+        </aside>
       </div>
-    </div>
+    </main>
 
-    <script src="js/jquery-2.1.4.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-
-    <script src="../../dist/bundle.js"></script>
-    <script src="js/paper-full.min.js"></script>
-
-    <script type="text/paperscript" canvas="perceptron">
-      view.scrollBy( -view.center.x, -view.center.y );
-
-      new Path.Line({
-          from: new Point( -view.size._width, view.center.y ),
-          to: new Point( view.size._width, view.center.y ),
-          strokeColor: 'black'
-      });
-
-      new Path.Line({
-          from: [ view.center.x, -view.size._height ],
-          to: [ view.center.x, view.size._height ],
-          strokeColor: 'black'
-      });
-
-      var perceptron = new Perceptron();
-
-      // Only execute onMouseDrag when the mouse
-      // has moved at least 10 points:
-      tool.distanceThreshold = 10;
-
-      function fronteraDesicion( pesos, x ) {
-          return [ x, -( x * pesos[ 1 ] / pesos[ 2 ] + pesos[ 0 ] / pesos[ 2 ] ) ];
-      }
-
-      function onMouseDown( event ) {
-          var point = event.point;
-
-          // Create a new path every time the mouse is clicked
-          var circle = new Path.Circle({
-              center: point,
-              radius: 4
-          });
-
-          var data = {
-              bgClass: 'danger',
-              value: 0
-          };
-
-          if( Key.isDown( 'control' ) ) {
-              circle.fillColor = '#00a';
-              data.bgClass = 'info';
-              data.value = perceptron.process([ point.x, point.y ]);
-
-          } else if( Key.isDown( 'shift' ) ) {
-              circle.fillColor = 'green';
-              data.bgClass = 'success';
-              data.value = 1;
-
-          } else {
-              circle.fillColor = 'red';
-          }
-
-          // circle.on( 'doubleclick', function( event ) { console.log( event )
-          // 	this.remove();
-          // });
-
-          if( data.bgClass !== 'info' ) {
-              perceptron.addData([ point.x, point.y ], data.value ).learn();
-          }
-
-          var line = new Path();
-          line.add( fronteraDesicion( perceptron.weights, -500 ) ); //view.size._width
-          line.add( fronteraDesicion( perceptron.weights, 500 ) );
-          line.strokeColor = 'blue';
-          line.removeOnDown();
-
-          console.log( perceptron.weights );
-
-          var dataHTML = [
-              '<tr class=' + data.bgClass + '>',
-                  '<td>' + point.x + '</td>',
-                  '<td>' + point.y + '</td>',
-                  '<td>' + data.value + '</td>',
-              '</tr>'
-          ];
-
-          $( '.view-data' ).prepend( dataHTML.join( '' ) );
-      }
-    </script>
+    <script src="../dist/bundle.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>

@@ -14,7 +14,7 @@
     "watch": "cross-env NODE_ENV=development webpack --watch --progress --config=webpack.config.js",
     "prod": "pnpm run production",
     "production": "cross-env NODE_ENV=production webpack --progress --config=webpack.config.js",
-    "demo": "http-server demo/ -p 6767",
+    "demo": "pnpm dev && http-server demo/ -p 6767 -o",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -41,6 +41,9 @@
       "serialize-javascript": "^7.0.3",
       "tar": "^7.5.11",
       "uuid": "^11.1.1"
+    },
+    "patchedDependencies": {
+      "@tensorflow/tfjs-node@4.22.0": "patches/@tensorflow__tfjs-node@4.22.0.patch"
     }
   },
   "keywords": [],

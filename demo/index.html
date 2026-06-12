@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Laboratorio interactivo para visualizar cómo aprende una red neuronal."
+    />
+    <title>Laboratorio de IA</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23b7ed62'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial' font-size='25' font-weight='700' fill='%23142c29'%3EAI%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="nav shell">
+        <a class="brand" href="#">
+          <span class="brand-mark">AI</span>
+          <span>Laboratorio de IA</span>
+        </a>
+        <div class="nav-links">
+          <a href="#laboratorio">Laboratorio</a>
+          <a href="#conceptos">Cómo aprende</a>
+          <a href="#ejemplos">Más demos</a>
+        </div>
+      </nav>
+
+      <div class="hero-content shell">
+        <div>
+          <p class="eyebrow">Redes neuronales, sin caja negra</p>
+          <h1>Mira cómo una IA aprende a tomar decisiones.</h1>
+          <p class="hero-copy">
+            Entrena distintos problemas, observa cómo disminuye el error y explora la frontera que
+            la red construye entre una clase y otra.
+          </p>
+          <a class="primary-link" href="#laboratorio">Abrir laboratorio <span>↓</span></a>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="node node-a"></div>
+          <div class="node node-b"></div>
+          <div class="node node-c"></div>
+          <div class="node node-d"></div>
+          <div class="node node-e"></div>
+          <div class="pulse-core">
+            <strong>IA</strong>
+            <span>entrenando</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section shell" id="laboratorio">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Laboratorio interactivo</p>
+            <h2>Elige un problema y entrena la red</h2>
+          </div>
+          <p>
+            Cada punto representa un caso conocido. El color de fondo muestra lo que la red predice
+            para casos que nunca vio.
+          </p>
+        </div>
+
+        <div class="lab-grid">
+          <aside class="control-panel card">
+            <div class="panel-heading">
+              <span class="step">01</span>
+              <div>
+                <span class="label">Caso de uso</span>
+                <h3 id="scenario-title">Compuerta XOR</h3>
+              </div>
+            </div>
+
+            <div class="scenario-list" id="scenario-list"></div>
+
+            <div class="control-group">
+              <label for="epochs">
+                <span>Épocas de entrenamiento</span>
+                <output id="epochs-value">3.000</output>
+              </label>
+              <input id="epochs" type="range" min="200" max="10000" step="200" value="3000" />
+            </div>
+
+            <div class="control-group">
+              <label for="learning-rate">
+                <span>Velocidad de aprendizaje</span>
+                <output id="learning-rate-value">0,30</output>
+              </label>
+              <input id="learning-rate" type="range" min="0.05" max="0.8" step="0.05" value="0.3" />
+            </div>
+
+            <button class="train-button" id="train-button" type="button">
+              <span class="button-icon">▶</span>
+              Entrenar modelo
+            </button>
+
+            <p class="scenario-description" id="scenario-description"></p>
+          </aside>
+
+          <section class="workspace">
+            <div class="metrics">
+              <article class="metric-card card">
+                <span class="metric-label">Pérdida final</span>
+                <strong id="metric-loss">—</strong>
+                <span class="metric-help">Más cerca de 0 es mejor</span>
+              </article>
+              <article class="metric-card card">
+                <span class="metric-label">Precisión</span>
+                <strong id="metric-accuracy">—</strong>
+                <span class="metric-help">Sobre ejemplos conocidos</span>
+              </article>
+              <article class="metric-card card">
+                <span class="metric-label">Épocas usadas</span>
+                <strong id="metric-epochs">—</strong>
+                <span class="metric-help" id="metric-status">Esperando entrenamiento</span>
+              </article>
+            </div>
+
+            <div class="visual-grid">
+              <article class="visual-card card">
+                <div class="card-heading">
+                  <div>
+                    <span class="label">Mapa de decisión</span>
+                    <h3 id="map-title">Qué aprendió la red</h3>
+                  </div>
+                  <div class="legend">
+                    <span><i class="legend-dot class-zero"></i>Clase 0</span>
+                    <span><i class="legend-dot class-one"></i>Clase 1</span>
+                  </div>
+                </div>
+                <canvas id="decision-canvas" width="640" height="500"></canvas>
+                <p class="canvas-hint">Haz clic en el mapa para probar una predicción nueva.</p>
+              </article>
+
+              <article class="visual-card card">
+                <div class="card-heading">
+                  <div>
+                    <span class="label">Curva de aprendizaje</span>
+                    <h3>El error baja con cada época</h3>
+                  </div>
+                  <span class="live-pill" id="live-pill"><i></i>Sin entrenar</span>
+                </div>
+                <canvas id="loss-canvas" width="640" height="500"></canvas>
+                <p class="canvas-hint">Una curva descendente indica que la red está aprendiendo.</p>
+              </article>
+            </div>
+
+            <article class="predictions-card card">
+              <div class="card-heading">
+                <div>
+                  <span class="label">Predicciones</span>
+                  <h3>Resultado por ejemplo</h3>
+                </div>
+                <span class="confidence-key">Confianza del modelo</span>
+              </div>
+              <div class="prediction-list" id="prediction-list"></div>
+            </article>
+          </section>
+        </div>
+      </section>
+
+      <section class="explain-section" id="conceptos">
+        <div class="section shell">
+          <div class="section-heading light">
+            <div>
+              <p class="eyebrow">Qué ocurre por dentro</p>
+              <h2>Aprender es corregirse muchas veces</h2>
+            </div>
+            <p>La red repite tres pasos hasta encontrar pesos que producen buenas predicciones.</p>
+          </div>
+
+          <div class="concept-grid">
+            <article>
+              <span class="concept-number">01</span>
+              <div class="concept-icon">→</div>
+              <h3>Predice</h3>
+              <p>Los datos avanzan por las capas y cada neurona aporta una señal al resultado.</p>
+            </article>
+            <article>
+              <span class="concept-number">02</span>
+              <div class="concept-icon">≠</div>
+              <h3>Mide el error</h3>
+              <p>La red compara su respuesta con la respuesta correcta del conjunto de datos.</p>
+            </article>
+            <article>
+              <span class="concept-number">03</span>
+              <div class="concept-icon">↺</div>
+              <h3>Ajusta los pesos</h3>
+              <p>La retropropagación modifica conexiones para equivocarse menos la próxima vez.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell" id="ejemplos">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Explora más</p>
+            <h2>Otros ejemplos del proyecto</h2>
+          </div>
+          <p>Experimentos históricos para profundizar en perceptrones y fronteras de decisión.</p>
+        </div>
+        <div class="example-grid">
+          <a class="example-card card" href="decision-border/">
+            <span class="example-tag">Interactivo</span>
+            <h3>Dibuja una frontera</h3>
+            <p>Añade puntos manualmente y observa cómo un perceptrón separa dos grupos.</p>
+            <strong>Abrir ejemplo →</strong>
+          </a>
+          <a class="example-card card" href="perceptron-graficas-de-datos/">
+            <span class="example-tag">Pesos</span>
+            <h3>Evolución del perceptrón</h3>
+            <p>Visualiza cómo cambian los pesos durante el aprendizaje de una compuerta OR.</p>
+            <strong>Abrir ejemplo →</strong>
+          </a>
+          <a class="example-card card" href="perceptron-red/backpropagation/">
+            <span class="example-tag">Backpropagation</span>
+            <h3>Curva de pérdida XOR</h3>
+            <p>Un ejemplo mínimo centrado en el historial de error de una red multicapa.</p>
+            <strong>Abrir ejemplo →</strong>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell">
+        <strong>Laboratorio de IA</strong>
+        <span>Construido con la red neuronal de este proyecto.</span>
+      </div>
+    </footer>
+
+    <script src="dist/bundle.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

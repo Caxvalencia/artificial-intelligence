@@ -1,61 +1,86 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
-    <title>Backpropagation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Curva de pérdida XOR | Laboratorio de IA</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23b7ed62'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial' font-size='25' font-weight='700' fill='%23142c29'%3EAI%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="../../example.css" />
+  </head>
+  <body class="example-page">
+    <header class="example-header">
+      <nav class="example-nav shell">
+        <a class="brand" href="../../"><span class="brand-mark">AI</span>Laboratorio de IA</a>
+        <a class="back-link" href="../../">← Volver al laboratorio</a>
+      </nav>
+      <div class="example-intro shell">
+        <div>
+          <p class="eyebrow">Backpropagation</p>
+          <h1>Explora la curva de pérdida XOR.</h1>
+        </div>
+        <p>
+          Ajusta el entrenamiento de una red multicapa y observa cómo disminuye el error hasta
+          aprender un patrón que no puede resolverse con una sola línea.
+        </p>
+      </div>
+    </header>
 
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src='/dist/bundle.js'></script>
-</head>
+    <main class="example-main shell">
+      <div class="example-layout">
+        <div class="example-stack">
+          <section class="example-panel card">
+            <div class="card-heading">
+              <div>
+                <span class="label">Curva de aprendizaje</span>
+                <h3>Pérdida por época</h3>
+              </div>
+            </div>
+            <canvas class="large-canvas" id="loss-canvas" width="900" height="560"></canvas>
+          </section>
+          <section class="example-panel card">
+            <div class="card-heading">
+              <div>
+                <span class="label">Predicciones</span>
+                <h3>Resultados del problema XOR</h3>
+              </div>
+            </div>
+            <div class="sample-list" id="prediction-list"></div>
+          </section>
+        </div>
 
-<body>
-    <div id="myDiv" style="width: 480px; height: 400px;"></div>
+        <aside class="example-panel card side-panel">
+          <section class="panel-section">
+            <p class="panel-title">Configuración</p>
+            <div class="range-control">
+              <label for="epochs">Épocas: <output id="epochs-output">3.000</output></label>
+              <input id="epochs" type="range" min="500" max="10000" step="500" value="3000" />
+            </div>
+            <div class="range-control">
+              <label for="rate">Aprendizaje: <output id="rate-output">0,30</output></label>
+              <input id="rate" type="range" min="0.05" max="0.8" step="0.05" value="0.3" />
+            </div>
+            <button class="action-button" id="train-button" type="button">Entrenar red</button>
+          </section>
+          <section class="panel-section">
+            <p class="panel-title">Resultado</p>
+            <div class="metric-list">
+              <div class="metric-row"><span>Pérdida final</span><strong id="loss">—</strong></div>
+              <div class="metric-row"><span>Precisión</span><strong id="accuracy">—</strong></div>
+              <div class="metric-row"><span>Épocas usadas</span><strong id="used-epochs">—</strong></div>
+            </div>
+          </section>
+          <section class="panel-section">
+            <p class="panel-title">Arquitectura</p>
+            <div class="formula">2 entradas → 4 neuronas ocultas → 1 salida</div>
+          </section>
+        </aside>
+      </div>
+    </main>
 
-    <script>
-        const dataset = [
-            { input: [0, 0], output: 1 },
-            { input: [0, 1], output: 0 },
-            { input: [1, 0], output: 0 },
-            { input: [1, 1], output: 1 }
-        ];
-
-        const XOR = new Backpropagation({ epochs: 15000 });
-
-        XOR.addLayer(3)
-            .addLayer(1)
-            .learn(dataset);
-
-        dataset.forEach(({ input, output }) => {
-            const outputActual = XOR.process(input)[0];
-
-            console.log(`expected (${input} -> ${output}), output ${outputActual}`);
-        });
-
-        // Draw loss
-        const lossEach1000 = XOR.history.loss.filter((item, index) => index % 1000 === 0);
-
-        const data = [
-            {
-                x: [...Array(lossEach1000.length).keys()],
-                y: lossEach1000,
-                type: 'scatter'
-            }
-        ];
-
-        const layout = {
-            yaxis2: {
-                domain: [0.6, 0.95],
-                anchor: 'x2'
-            },
-            xaxis2: {
-                domain: [0.6, 0.95],
-                anchor: 'y2'
-            }
-        };
-
-        Plotly.newPlot('myDiv', data, layout);
-    </script>
-</body>
-
+    <script src="../../dist/bundle.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

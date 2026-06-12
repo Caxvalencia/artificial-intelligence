@@ -2,52 +2,80 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Perceptron Graficas</title>
-
-    <link rel="stylesheet" href="http://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css" />
-
-    <style>
-      .ct-chart {
-        width: 90%;
-        height: 600px;
-        border: 1px solid #ccc;
-      }
-
-      .tooltip {
-        position: absolute;
-        display: inline-block;
-        min-width: 5em;
-        padding: 0.5em;
-        background: #f4cc3d;
-        color: #453d3f;
-        font-weight: 700;
-        text-align: center;
-        pointer-events: none;
-        z-index: 1;
-      }
-
-      .ct-series-a .ct-line {
-        stroke: #4fc174;
-        stroke-width: 3px;
-      }
-
-      .ct-series-a .ct-point {
-        stroke: #558fc3;
-        stroke-width: 15px;
-        /*stroke-linecap: square;*/
-      }
-    </style>
-
-    <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-    <script src="http://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Evolución del perceptrón | Laboratorio de IA</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23b7ed62'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial' font-size='25' font-weight='700' fill='%23142c29'%3EAI%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="../example.css" />
   </head>
+  <body class="example-page">
+    <header class="example-header">
+      <nav class="example-nav shell">
+        <a class="brand" href="../"><span class="brand-mark">AI</span>Laboratorio de IA</a>
+        <a class="back-link" href="../">← Volver al laboratorio</a>
+      </nav>
+      <div class="example-intro shell">
+        <div>
+          <p class="eyebrow">Evolución de pesos</p>
+          <h1>Observa cómo cambia un perceptrón.</h1>
+        </div>
+        <p>
+          Cada corrección modifica los pesos de entrada. La gráfica permite seguir ese recorrido
+          hasta que el modelo clasifica todos los ejemplos.
+        </p>
+      </div>
+    </header>
 
-  <body>
-    <div class="chart">
-      <div class="ct-chart"></div>
-    </div>
+    <main class="example-main shell">
+      <div class="example-layout">
+        <section class="example-panel card">
+          <div class="card-heading">
+            <div>
+              <span class="label">Historial de entrenamiento</span>
+              <h3>Peso A, peso B y umbral</h3>
+            </div>
+          </div>
+          <canvas class="large-canvas" id="weights-canvas" width="900" height="560"></canvas>
+          <p class="canvas-hint">
+            Cada punto corresponde a un ajuste realizado durante el aprendizaje.
+          </p>
+        </section>
 
-    <script src="../../dist/bundle.js"></script>
+        <aside class="example-panel card side-panel">
+          <section class="panel-section">
+            <p class="panel-title">Configuración</p>
+            <div class="select-control">
+              <label for="gate">Problema lógico</label>
+              <select id="gate">
+                <option value="or">Compuerta OR</option>
+                <option value="and">Compuerta AND</option>
+              </select>
+            </div>
+            <button class="action-button" id="train-button" type="button">Entrenar de nuevo</button>
+          </section>
+          <section class="panel-section">
+            <p class="panel-title">Resultado</p>
+            <div class="metric-list">
+              <div class="metric-row"><span>Épocas</span><strong id="epochs">—</strong></div>
+              <div class="metric-row"><span>Ajustes</span><strong id="updates">—</strong></div>
+              <div class="metric-row"><span>Precisión</span><strong id="accuracy">—</strong></div>
+            </div>
+          </section>
+          <section class="panel-section">
+            <p class="panel-title">Pesos finales</p>
+            <div class="weight-list" id="weight-list"></div>
+          </section>
+          <section class="panel-section">
+            <p class="panel-title">Regla aprendida</p>
+            <div class="formula" id="formula">Esperando entrenamiento...</div>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <script src="../dist/bundle.js"></script>
     <script src="demo.js"></script>
   </body>
 </html>
