@@ -357,9 +357,13 @@ pnpm audit
 Las pruebas principales cubren:
 
 - Compuertas AND, OR y el fallo esperado de XOR en el perceptrón.
-- OR, AND, XOR y XNOR con backpropagation.
-- Importación y exportación de modelos.
-- Entrenamiento de XNOR con TensorFlow.js.
+- XNOR y objetivos de múltiples salidas con backpropagation.
+- Configuración, validaciones, entrenamiento determinista y early stopping.
+- Importación legacy, exportación versionada y round trip de modelos.
+- Entrenamiento comparativo de XNOR con TensorFlow.js.
+
+Consulta [`PRUEBAS.md`](PRUEBAS.md) para ver los comandos, el alcance y la
+descripción de cada caso de prueba.
 
 ## Limitaciones conocidas
 
