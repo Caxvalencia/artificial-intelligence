@@ -2,139 +2,134 @@ import { ActivationFunctionType } from './activation-functions/activation-functi
 import { Perceptron } from './perceptron';
 
 export class Neuron extends Perceptron {
-    beforeWeights: Float64Array;
-    error: number;
-    inputNeurons: Neuron[];
-    outputNeurons: Neuron[];
-    synapse: number;
-    currentData: Float64Array;
+  beforeWeights: Float64Array;
+  error: number;
+  inputNeurons: Neuron[];
+  outputNeurons: Neuron[];
+  synapse: number;
+  currentData: Float64Array;
 
-    /**
-     * @construtor
-     */
-    constructor(
-        activationFunction: ActivationFunctionType = ActivationFunctionType.SIGMOIDAL
-    ) {
-        super(activationFunction);
+  /**
+   * @construtor
+   */
+  constructor(activationFunction: ActivationFunctionType = ActivationFunctionType.SIGMOIDAL) {
+    super(activationFunction);
 
-        this.error = 0;
-        this.synapse = 0;
-        this.outputNeurons = [];
-        this.inputNeurons = [];
+    this.error = 0;
+    this.synapse = 0;
+    this.outputNeurons = [];
+    this.inputNeurons = [];
+  }
+
+  learn(currentData?: Float64Array) {
+    if (currentData) {
+      this.synapticProcessor.data = currentData;
     }
 
-    learn(currentData?: Float64Array) {
-        if (currentData) {
-            this.synapticProcessor.data = currentData;
-        }
-        
-        this.currentData = this.synapticProcessor.data;
+    this.currentData = this.synapticProcessor.data;
 
-        if (!this.weights) {
-            this.assignWeights(this.currentData.length);
-            this.setBeforeWeights(this.weights.slice());
-        }
-
-        this.synapticProcessor.calculateSynapses(this.weights, this.threshold);
-        this.synapse = this.synapticProcessor.synapse;
-
-        return this;
+    if (!this.weights) {
+      this.assignWeights(this.currentData.length);
+      this.setBeforeWeights(this.weights.slice());
     }
 
-    /**
-     * Error on hidden layers
-     */
-    backpropagation() {
-        for (let index = 0; index < this.inputNeurons.length; index++) {
-            this.inputNeurons[index].calculateHiddenError(index);
-        }
+    this.synapticProcessor.calculateSynapses(this.weights, this.threshold);
+    this.synapse = this.synapticProcessor.synapse;
 
-        if (this.inputNeurons.length > 0) {
-            this.inputNeurons[0].backpropagation();
-        }
+    return this;
+  }
+
+  /**
+   * Error on hidden layers
+   */
+  backpropagation() {
+    for (let index = 0; index < this.inputNeurons.length; index++) {
+      this.inputNeurons[index].calculateHiddenError(index);
     }
 
-    recalculateWeights() {
-        const delta = this.synapticProcessor.learningRate * this.error;
-        const momentumFactor = 0.77;
-        let deltaWeights: number = 0;
+    if (this.inputNeurons.length > 0) {
+      this.inputNeurons[0].backpropagation();
+    }
+  }
 
-        for (let i = 0; i < this.weights.length; i++) {
-            if (this.currentData[i] === 0) {
-                continue;
-            }
+  recalculateWeights() {
+    const delta = this.synapticProcessor.learningRate * this.error;
+    const momentumFactor = 0.77;
+    let deltaWeights: number = 0;
 
-            deltaWeights =
-                momentumFactor * (this.weights[i] - this.beforeWeights[i]);
+    for (let i = 0; i < this.weights.length; i++) {
+      if (this.currentData[i] === 0) {
+        continue;
+      }
 
-            this.beforeWeights[i] = this.weights[i];
-            this.weights[i] += this.currentData[i] * delta + deltaWeights;
-        }
+      deltaWeights = momentumFactor * (this.weights[i] - this.beforeWeights[i]);
 
-        this.threshold += delta;
+      this.beforeWeights[i] = this.weights[i];
+      this.weights[i] += this.currentData[i] * delta + deltaWeights;
     }
 
-    output(): number {
-        return this.synapticProcessor.activationFunction.activation(
-            this.synapse
-        );
+    this.threshold += delta;
+  }
+
+  output(): number {
+    return this.synapticProcessor.activationFunction.activation(this.synapse);
+  }
+
+  process() {
+    this.synapticProcessor.calculateSynapses(this.weights, this.threshold);
+    this.synapse = this.synapticProcessor.synapse;
+
+    return this.output();
+  }
+
+  calculateErrorOfOutput(outputExpected) {
+    const error = outputExpected - this.output();
+
+    this.calculateErrorDerivated(error);
+  }
+
+  calculateHiddenError(neuronIndex) {
+    let sumError = 0;
+
+    for (let index = 0; index < this.outputNeurons.length; index++) {
+      const neuron = this.outputNeurons[index];
+      sumError += neuron.weights[neuronIndex] * neuron.error;
     }
 
-    process() {
-        this.synapticProcessor.calculateSynapses(this.weights, this.threshold);
-        this.synapse = this.synapticProcessor.synapse;
+    this.calculateErrorDerivated(sumError);
 
-        return this.output();
-    }
+    return this;
+  }
 
-    calculateErrorOfOutput(outputExpected) {
-        const error = outputExpected - this.output();
+  calculateErrorDerivated(factorDelta) {
+    this.error = factorDelta * this.prime();
 
-        this.calculateErrorDerivated(error);
-    }
+    return this;
+  }
 
-    calculateHiddenError(neuronIndex) {
-        let sumError = 0;
+  /**
+   * @returns {number}
+   */
+  prime(): number {
+    return this.synapticProcessor.activationFunction.prime(this.synapse);
+  }
 
-        for (let index = 0; index < this.outputNeurons.length; index++) {
-            const neuron = this.outputNeurons[index];
-            sumError += neuron.weights[neuronIndex] * neuron.error;
-        }
+  /**
+   * @param {Float64Array} beforeWeights
+   * @returns {this}
+   */
+  setBeforeWeights(beforeWeights: Float64Array): this {
+    this.beforeWeights = beforeWeights;
 
-        this.calculateErrorDerivated(sumError);
+    return this;
+  }
 
-        return this;
-    }
+  /**
+   * @returns {this}
+   */
+  setThreshold(threshold: number): this {
+    this.threshold = threshold;
 
-    calculateErrorDerivated(factorDelta) {
-        this.error = factorDelta * this.prime();
-
-        return this;
-    }
-
-    /**
-     * @returns {number}
-     */
-    prime(): number {
-        return this.synapticProcessor.activationFunction.prime(this.synapse);
-    }
-
-    /**
-     * @param {Float64Array} beforeWeights
-     * @returns {this}
-     */
-    setBeforeWeights(beforeWeights: Float64Array): this {
-        this.beforeWeights = beforeWeights;
-
-        return this;
-    }
-
-    /**
-     * @returns {this}
-     */
-    setThreshold(threshold: number): this {
-        this.threshold = threshold;
-
-        return this;
-    }
+    return this;
+  }
 }

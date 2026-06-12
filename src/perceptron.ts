@@ -2,120 +2,115 @@ import { ActivationFunctionType } from './activation-functions/activation-functi
 import { SynapticProcessor } from './synaptic-processor';
 
 export class Perceptron {
-    dataStack: any[];
-    weights: Float64Array;
-    threshold: number;
-    synapticProcessor: SynapticProcessor;
+  dataStack: any[];
+  weights: Float64Array;
+  threshold: number;
+  synapticProcessor: SynapticProcessor;
 
-    funcBack: () => void;
+  funcBack: () => void;
 
-    constructor(
-        activationFunction?: ActivationFunctionType,
-        callback = () => {}
-    ) {
-        this.weights = null;
-        this.funcBack = callback;
+  constructor(activationFunction?: ActivationFunctionType, callback = () => {}) {
+    this.weights = null;
+    this.funcBack = callback;
 
-        this.synapticProcessor = new SynapticProcessor(activationFunction);
-        this.dataStack = [];
+    this.synapticProcessor = new SynapticProcessor(activationFunction);
+    this.dataStack = [];
+  }
+
+  addData(data: Float64Array, output: number) {
+    this.dataStack.push([data, output]);
+
+    return this;
+  }
+
+  learn() {
+    if (!this.weights) {
+      this.assignWeights();
     }
 
-    addData(data: Float64Array, output: number) {
-        this.dataStack.push([data, output]);
+    const LIMIT_ERRORS: number = 8000;
+    let counterErrors = 0;
 
-        return this;
-    }
+    const runEpochs = () => {
+      let hasError = false;
 
-    learn() {
-        if (!this.weights) {
-            this.assignWeights();
+      for (let i = 0; i < this.dataStack.length; i++) {
+        this.synapticProcessor
+          .setData(this.dataStack[i][0])
+          .setOutputExpected(this.dataStack[i][1])
+          .calculateSynapses(this.weights, this.threshold)
+          .calculateError();
+
+        if (this.synapticProcessor.error !== 0) {
+          this.synapticProcessor.recalculateWeights(this.weights);
+          this.threshold += this.synapticProcessor.delta;
+
+          hasError = true;
+          this.funcBack();
+        }
+      }
+
+      if (hasError) {
+        counterErrors++;
+
+        if (counterErrors >= LIMIT_ERRORS) {
+          counterErrors = 0;
+
+          throw Error('Maximum error limit reached');
         }
 
-        const LIMIT_ERRORS: number = 8000;
-        let counterErrors = 0;
+        return runEpochs();
+      }
 
-        const runEpochs = () => {
-            let hasError = false;
+      counterErrors = 0;
+    };
 
-            for (let i = 0; i < this.dataStack.length; i++) {
-                this.synapticProcessor
-                    .setData(this.dataStack[i][0])
-                    .setOutputExpected(this.dataStack[i][1])
-                    .calculateSynapses(this.weights, this.threshold)
-                    .calculateError();
+    runEpochs();
 
-                if (this.synapticProcessor.error !== 0) {
-                    this.synapticProcessor.recalculateWeights(this.weights);
-                    this.threshold += this.synapticProcessor.delta;
+    return this;
+  }
 
-                    hasError = true;
-                    this.funcBack();
-                }
-            }
+  process(data: Float64Array) {
+    return this.synapticProcessor
+      .setData(data)
+      .calculateSynapses(this.weights, this.threshold)
+      .output();
+  }
 
-            if (hasError) {
-                counterErrors++;
+  setWeights(weights: Float64Array) {
+    this.weights = weights;
 
-                if (counterErrors >= LIMIT_ERRORS) {
-                    counterErrors = 0;
+    return this;
+  }
 
-                    throw Error('Maximum error limit reached');
-                }
+  protected createWeight() {
+    const rangeWeight = { MIN: -0.5, MAX: 0.49 };
+    const rangeDiff = rangeWeight.MAX - rangeWeight.MIN;
+    let weight = 0;
 
-                return runEpochs();
-            }
-
-            counterErrors = 0;
-        };
-
-        runEpochs();
-
-        return this;
+    while (!weight) {
+      weight = parseFloat((Math.random() * rangeDiff + rangeWeight.MIN).toFixed(4));
     }
 
-    process(data: Float64Array) {
-        return this.synapticProcessor
-            .setData(data)
-            .calculateSynapses(this.weights, this.threshold)
-            .output();
+    return weight;
+  }
+
+  protected assignWeights(dataSize: number = null) {
+    if (!dataSize) {
+      dataSize = this.dataStack[0][0].length;
     }
 
-    setWeights(weights: Float64Array) {
-        this.weights = weights;
+    const weights = new Float64Array(dataSize);
 
-        return this;
+    for (let i = 0; i < dataSize; i++) {
+      weights[i] = this.createWeight();
     }
 
-    protected createWeight() {
-        const rangeWeight = { MIN: -0.5, MAX: 0.49 };
-        const rangeDiff = rangeWeight.MAX - rangeWeight.MIN;
-        let weight = 0;
+    this.setWeights(weights);
+    this.threshold = this.createWeight();
 
-        while (!weight) {
-            weight = parseFloat(
-                (Math.random() * rangeDiff + rangeWeight.MIN).toFixed(4)
-            );
-        }
+    this.funcBack();
 
-        return weight;
-    }
-
-    protected assignWeights(dataSize: number = null) {
-        if (!dataSize) {
-            dataSize = this.dataStack[0][0].length;
-        }
-
-        const weights = new Float64Array(dataSize);
-
-        for (let i = 0; i < dataSize; i++) {
-            weights[i] = this.createWeight();
-        }
-
-        this.setWeights(weights);
-        this.threshold = this.createWeight();
-
-        this.funcBack();
-
-        return this;
-    }
+    return this;
+  }
 }

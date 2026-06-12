@@ -1,57 +1,53 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <title>Perceptron Graficas</title>
 
-    <link rel="stylesheet" href="http://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+    <link rel="stylesheet" href="http://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css" />
 
     <style>
-        .ct-chart {
-            width: 90%;
-            height: 600px;
-            border: 1px solid #ccc;
-        }
+      .ct-chart {
+        width: 90%;
+        height: 600px;
+        border: 1px solid #ccc;
+      }
 
-        .tooltip {
-            position: absolute;
-            display: inline-block;
-            min-width: 5em;
-            padding: .5em;
-            background: #F4Cc3D;
-            color: #453D3F;
-            font-weight: 700;
-            text-align: center;
-            pointer-events: none;
-            z-index: 1;
-        }
+      .tooltip {
+        position: absolute;
+        display: inline-block;
+        min-width: 5em;
+        padding: 0.5em;
+        background: #f4cc3d;
+        color: #453d3f;
+        font-weight: 700;
+        text-align: center;
+        pointer-events: none;
+        z-index: 1;
+      }
 
+      .ct-series-a .ct-line {
+        stroke: #4fc174;
+        stroke-width: 3px;
+      }
 
-        .ct-series-a .ct-line {
-            stroke: #4FC174;
-            stroke-width: 3px;
-        }
-
-        .ct-series-a .ct-point {
-            stroke: #558FC3;
-            stroke-width: 15px;
-            /*stroke-linecap: square;*/
-        }
+      .ct-series-a .ct-point {
+        stroke: #558fc3;
+        stroke-width: 15px;
+        /*stroke-linecap: square;*/
+      }
     </style>
 
     <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="http://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="chart">
-        <div class="ct-chart"></div>
+      <div class="ct-chart"></div>
     </div>
 
     <script src="../../dist/bundle.js"></script>
     <script src="demo.js"></script>
-
-</body>
-
+  </body>
 </html>

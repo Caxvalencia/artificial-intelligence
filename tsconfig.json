@@ -1,18 +1,18 @@
 {
-    "compilerOptions": {
-        "outDir": "./dist/",
-        "noImplicitAny": false,
-        "noImplicitThis": true,
-        "noUnusedParameters": true,
-        "noUnusedLocals": true,
-        "sourceMap": true,
-        "module": "commonjs",
-        "lib": ["es6"],
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "target": "es2017",
-        "jsx": "react",
-        "skipLibCheck": true
-    },
-    "exclude": ["node_modules", "demo", "dist"]
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "noImplicitAny": false,
+    "noImplicitThis": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "sourceMap": true,
+    "module": "commonjs",
+    "lib": ["es6"],
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "es2017",
+    "jsx": "react",
+    "skipLibCheck": true
+  },
+  "exclude": ["node_modules", "demo", "dist"]
 }

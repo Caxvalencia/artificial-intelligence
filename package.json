@@ -2,18 +2,21 @@
   "name": "artificial-intelligence",
   "version": "0.0.1",
   "description": "",
+  "packageManager": "pnpm@10.33.0",
   "engines": {
-    "node": ">=8.11.2"
+    "node": ">=22.0.0"
   },
   "scripts": {
-    "test": "nyc mocha --timeout 0 -r ts-node/register -r source-map-support/register --recursive src/tests/*-test.ts",
-    "test-file": "nyc mocha --timeout 0 -r ts-node/register -r source-map-support/register --recursive ",
-    "dev": "npm run development",
-    "development": "cross-env NODE_ENV=development webpack --progress --hide-modules --config=webpack.config.js",
-    "watch": "cross-env NODE_ENV=development webpack --watch --progress --hide-modules --config=webpack.config.js",
-    "prod": "npm run production",
-    "production": "cross-env NODE_ENV=production webpack --progress --hide-modules --config=webpack.config.js",
-    "demo": "http-server demo/ -p 6767"
+    "test": "nyc ts-mocha --timeout 0 -r source-map-support/register --recursive src/tests/*-test.ts",
+    "test-file": "nyc ts-mocha --timeout 0 -r source-map-support/register --recursive ",
+    "dev": "pnpm run development",
+    "development": "cross-env NODE_ENV=development webpack --progress --config=webpack.config.js",
+    "watch": "cross-env NODE_ENV=development webpack --watch --progress --config=webpack.config.js",
+    "prod": "pnpm run production",
+    "production": "cross-env NODE_ENV=production webpack --progress --config=webpack.config.js",
+    "demo": "http-server demo/ -p 6767",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "nyc": {
     "extension": [
@@ -29,29 +32,42 @@
     ],
     "all": true
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@tensorflow/tfjs-node"
+    ],
+    "overrides": {
+      "diff": "^8.0.3",
+      "serialize-javascript": "^7.0.3",
+      "tar": "^7.5.11",
+      "uuid": "^11.1.1"
+    }
+  },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@tensorflow/tfjs": "^1.1.2",
-    "@tensorflow/tfjs-node": "^1.1.2"
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-node": "^4.22.0"
   },
   "devDependencies": {
-    "@types/chai": "^4.1.7",
-    "@types/node": "^10.12.23",
-    "@types/sinon": "^5.0.7",
-    "chai": "^4.2.0",
-    "cross-env": "^5.2.0",
-    "http-server": "^0.11.1",
-    "mocha": "^5.2.0",
-    "mocha-typescript": "^1.1.17",
-    "nyc": "^12.0.2",
-    "sinon": "^6.3.5",
-    "source-map-support": "^0.5.10",
-    "ts-loader": "^4.5.0",
-    "ts-node": "^7.0.1",
-    "typescript": "^2.9.2",
-    "webpack": "^4.29.3",
-    "webpack-cli": "^3.2.3"
+    "@testdeck/mocha": "0.3.3",
+    "@types/chai": "^4.3.20",
+    "@types/node": "^25.9.1",
+    "@types/sinon": "^21.0.1",
+    "chai": "^4.5.0",
+    "cross-env": "^10.1.0",
+    "http-server": "^14.1.1",
+    "mocha": "^11.7.6",
+    "nyc": "^18.0.0",
+    "prettier": "3.8.3",
+    "sinon": "^22.0.0",
+    "source-map-support": "^0.5.21",
+    "ts-loader": "^9.6.0",
+    "ts-mocha": "^11.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3"
   }
 }

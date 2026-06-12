@@ -3,83 +3,80 @@ import { Neuron } from './neuron';
 import { SynapticProcessor } from './synaptic-processor';
 
 export class Layer {
-    private layers: Neuron[][];
-    private activationFunction: ActivationFunctionType;
+  private layers: Neuron[][];
+  private activationFunction: ActivationFunctionType;
 
-    synapticProcessor: SynapticProcessor;
+  synapticProcessor: SynapticProcessor;
 
-    constructor(
-        activationFunction: ActivationFunctionType = ActivationFunctionType.SIGMOIDAL,
-        learningRate: number
-    ) {
-        this.layers = [];
-        this.activationFunction = activationFunction;
-        this.synapticProcessor = new SynapticProcessor(
-            this.activationFunction,
-            learningRate
-        );
+  constructor(
+    activationFunction: ActivationFunctionType = ActivationFunctionType.SIGMOIDAL,
+    learningRate: number
+  ) {
+    this.layers = [];
+    this.activationFunction = activationFunction;
+    this.synapticProcessor = new SynapticProcessor(this.activationFunction, learningRate);
+  }
+
+  /**
+   * @param {number} numberNeurons
+   * @returns
+   */
+  add(numberNeurons: number) {
+    const layer = this.create(numberNeurons);
+    const indexNewLayer = this.layers.push(layer) - 1;
+    const beforeLayer = this.layers[indexNewLayer - 1];
+
+    if (beforeLayer === undefined) {
+      return this;
     }
 
-    /**
-     * @param {number} numberNeurons
-     * @returns
-     */
-    add(numberNeurons: number) {
-        const layer = this.create(numberNeurons);
-        const indexNewLayer = this.layers.push(layer) - 1;
-        const beforeLayer = this.layers[indexNewLayer - 1];
+    // Apuntar con cada Neuron de la nueva capa a la anterior
+    layer.forEach((neuron: Neuron) => {
+      neuron.inputNeurons = beforeLayer;
+    });
 
-        if (beforeLayer === undefined) {
-            return this;
-        }
+    // Apuntar con cada neurona de la capa anterior a la nueva capa
+    beforeLayer.forEach((neuron: Neuron) => {
+      neuron.outputNeurons = layer;
+    });
 
-        // Apuntar con cada Neuron de la nueva capa a la anterior
-        layer.forEach((neuron: Neuron) => {
-            neuron.inputNeurons = beforeLayer;
-        });
+    return this;
+  }
 
-        // Apuntar con cada neurona de la capa anterior a la nueva capa
-        beforeLayer.forEach((neuron: Neuron) => {
-            neuron.outputNeurons = layer;
-        });
+  forEach(callback: (layer: Neuron[], index?: number) => void) {
+    for (let idx = 0; idx < this.layers.length; idx++) {
+      callback(this.layers[idx], idx);
+    }
+  }
 
-        return this;
+  /**
+   * @param {number} index
+   * @returns {Neuron[]}
+   */
+  get(index: number): Neuron[] {
+    return this.layers[index];
+  }
+
+  /**
+   * @returns {Neuron[]}
+   */
+  getLast(): Neuron[] {
+    return this.get(this.layers.length - 1);
+  }
+
+  /**
+   * @private
+   * @param {number} numberNeurons
+   * @returns {Neuron[]}
+   */
+  private create(numberNeurons: number): Neuron[] {
+    const layer: Neuron[] = [];
+
+    for (let i = 0; i < numberNeurons; i++) {
+      layer[i] = new Neuron(this.activationFunction);
+      layer[i].synapticProcessor = this.synapticProcessor;
     }
 
-    forEach(callback: (layer: Neuron[], index?: number) => void) {
-        for (let idx = 0; idx < this.layers.length; idx++) {
-            callback(this.layers[idx], idx);
-        }
-    }
-
-    /**
-     * @param {number} index
-     * @returns {Neuron[]}
-     */
-    get(index: number): Neuron[] {
-        return this.layers[index];
-    }
-
-    /**
-     * @returns {Neuron[]}
-     */
-    getLast(): Neuron[] {
-        return this.get(this.layers.length - 1);
-    }
-
-    /**
-     * @private
-     * @param {number} numberNeurons
-     * @returns {Neuron[]}
-     */
-    private create(numberNeurons: number): Neuron[] {
-        const layer: Neuron[] = [];
-
-        for (let i = 0; i < numberNeurons; i++) {
-            layer[i] = new Neuron(this.activationFunction);
-            layer[i].synapticProcessor = this.synapticProcessor;
-        }
-
-        return layer;
-    }
+    return layer;
+  }
 }

@@ -1,164 +1,160 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
-
+  <head>
     <style>
-        #perceptron {
-            width: 100%;
-            height: 100%;
-            border: 1px solid #ccc;
-            cursor: pointer;
-        }
+      #perceptron {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ccc;
+        cursor: pointer;
+      }
     </style>
 
     <link rel="stylesheet" href="css/bootstrap.min.css" />
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="containter">
-        <div class="row">
-            <div class="col-md-9">
-                <h3 class="text-center">Perceptron - Decision border</h3>
+      <div class="row">
+        <div class="col-md-9">
+          <h3 class="text-center">Perceptron - Decision border</h3>
 
-                <div class="col-md-8 col-md-offset-2">
-                    <div class="panel panel-default">
-                        <canvas id="perceptron" resize></canvas>
-                    </div>
-                </div>
-
-                <div class="col-md-12">
-                    <h3>
-                        <p>
-                            <code>Clic</code>: Add
-                            <span style="color: red">red</span>
-                            point
-                        </p>
-
-                        <p>
-                            <code>Shift</code> +
-                            <code>Clic</code>: Add
-                            <span style="color: green">green</span>
-                            point
-                        </p>
-
-                        <p>
-                            <code>Ctrl</code> +
-                            <code>Clic</code>: Add
-                            <span style="color: #00a;">blue</span>
-                            point of test
-                        </p>
-                    </h3>
-                </div>
+          <div class="col-md-8 col-md-offset-2">
+            <div class="panel panel-default">
+              <canvas id="perceptron" resize></canvas>
             </div>
+          </div>
 
-            <div class="col-md-3">
-                <div class="table-responsive" style='height: 500px; overflow: auto;'>
-                    <table class='table table-hover' style='cursor: pointer;'>
-                        <thead>
-                            <th>X
-                                <sub>1</sub>
-                            </th>
-                            <th>X
-                                <sub>2</sub>
-                            </th>
-                            <th>Y</th>
-                        </thead>
+          <div class="col-md-12">
+            <h3>
+              <p>
+                <code>Clic</code>: Add
+                <span style="color: red">red</span>
+                point
+              </p>
 
-                        <tbody class='view-data'></tbody>
-                    </table>
-                </div>
-            </div>
+              <p>
+                <code>Shift</code> + <code>Clic</code>: Add
+                <span style="color: green">green</span>
+                point
+              </p>
+
+              <p>
+                <code>Ctrl</code> + <code>Clic</code>: Add
+                <span style="color: #00a">blue</span>
+                point of test
+              </p>
+            </h3>
+          </div>
         </div>
+
+        <div class="col-md-3">
+          <div class="table-responsive" style="height: 500px; overflow: auto">
+            <table class="table table-hover" style="cursor: pointer">
+              <thead>
+                <th>
+                  X
+                  <sub>1</sub>
+                </th>
+                <th>
+                  X
+                  <sub>2</sub>
+                </th>
+                <th>Y</th>
+              </thead>
+
+              <tbody class="view-data"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script src='js/jquery-2.1.4.min.js'></script>
-    <script src='js/bootstrap.min.js'></script>
+    <script src="js/jquery-2.1.4.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
 
     <script src="../../dist/bundle.js"></script>
     <script src="js/paper-full.min.js"></script>
 
     <script type="text/paperscript" canvas="perceptron">
-        view.scrollBy( -view.center.x, -view.center.y );
-        
-        new Path.Line({
-            from: new Point( -view.size._width, view.center.y ),
-            to: new Point( view.size._width, view.center.y ),
-            strokeColor: 'black'
-        });
-        
-        new Path.Line({
-            from: [ view.center.x, -view.size._height ],
-            to: [ view.center.x, view.size._height ],
-            strokeColor: 'black'
-        });
-        
-        var perceptron = new Perceptron();
-        
-        // Only execute onMouseDrag when the mouse
-        // has moved at least 10 points:
-        tool.distanceThreshold = 10;
-        
-        function fronteraDesicion( pesos, x ) {
-            return [ x, -( x * pesos[ 1 ] / pesos[ 2 ] + pesos[ 0 ] / pesos[ 2 ] ) ];
-        }
-        
-        function onMouseDown( event ) {
-            var point = event.point;
-        
-            // Create a new path every time the mouse is clicked
-            var circle = new Path.Circle({
-                center: point,
-                radius: 4
-            });
-        
-            var data = {
-                bgClass: 'danger',
-                value: 0
-            };
-        
-            if( Key.isDown( 'control' ) ) {
-                circle.fillColor = '#00a';
-                data.bgClass = 'info';
-                data.value = perceptron.process([ point.x, point.y ]);
-        
-            } else if( Key.isDown( 'shift' ) ) {
-                circle.fillColor = 'green';
-                data.bgClass = 'success';
-                data.value = 1;
-        
-            } else {
-                circle.fillColor = 'red';
-            }
-        
-            // circle.on( 'doubleclick', function( event ) { console.log( event )
-            // 	this.remove();
-            // });
-        
-            if( data.bgClass !== 'info' ) {
-                perceptron.addData([ point.x, point.y ], data.value ).learn();
-            }
-        
-            var line = new Path();
-            line.add( fronteraDesicion( perceptron.weights, -500 ) ); //view.size._width
-            line.add( fronteraDesicion( perceptron.weights, 500 ) );
-            line.strokeColor = 'blue';
-            line.removeOnDown();
-        
-            console.log( perceptron.weights );
-        
-            var dataHTML = [
-                '<tr class=' + data.bgClass + '>',
-                    '<td>' + point.x + '</td>',
-                    '<td>' + point.y + '</td>',
-                    '<td>' + data.value + '</td>',
-                '</tr>'
-            ];
-        
-            $( '.view-data' ).prepend( dataHTML.join( '' ) );
-        }
-        </script>
+      view.scrollBy( -view.center.x, -view.center.y );
 
-</body>
+      new Path.Line({
+          from: new Point( -view.size._width, view.center.y ),
+          to: new Point( view.size._width, view.center.y ),
+          strokeColor: 'black'
+      });
 
+      new Path.Line({
+          from: [ view.center.x, -view.size._height ],
+          to: [ view.center.x, view.size._height ],
+          strokeColor: 'black'
+      });
+
+      var perceptron = new Perceptron();
+
+      // Only execute onMouseDrag when the mouse
+      // has moved at least 10 points:
+      tool.distanceThreshold = 10;
+
+      function fronteraDesicion( pesos, x ) {
+          return [ x, -( x * pesos[ 1 ] / pesos[ 2 ] + pesos[ 0 ] / pesos[ 2 ] ) ];
+      }
+
+      function onMouseDown( event ) {
+          var point = event.point;
+
+          // Create a new path every time the mouse is clicked
+          var circle = new Path.Circle({
+              center: point,
+              radius: 4
+          });
+
+          var data = {
+              bgClass: 'danger',
+              value: 0
+          };
+
+          if( Key.isDown( 'control' ) ) {
+              circle.fillColor = '#00a';
+              data.bgClass = 'info';
+              data.value = perceptron.process([ point.x, point.y ]);
+
+          } else if( Key.isDown( 'shift' ) ) {
+              circle.fillColor = 'green';
+              data.bgClass = 'success';
+              data.value = 1;
+
+          } else {
+              circle.fillColor = 'red';
+          }
+
+          // circle.on( 'doubleclick', function( event ) { console.log( event )
+          // 	this.remove();
+          // });
+
+          if( data.bgClass !== 'info' ) {
+              perceptron.addData([ point.x, point.y ], data.value ).learn();
+          }
+
+          var line = new Path();
+          line.add( fronteraDesicion( perceptron.weights, -500 ) ); //view.size._width
+          line.add( fronteraDesicion( perceptron.weights, 500 ) );
+          line.strokeColor = 'blue';
+          line.removeOnDown();
+
+          console.log( perceptron.weights );
+
+          var dataHTML = [
+              '<tr class=' + data.bgClass + '>',
+                  '<td>' + point.x + '</td>',
+                  '<td>' + point.y + '</td>',
+                  '<td>' + data.value + '</td>',
+              '</tr>'
+          ];
+
+          $( '.view-data' ).prepend( dataHTML.join( '' ) );
+      }
+    </script>
+  </body>
 </html>

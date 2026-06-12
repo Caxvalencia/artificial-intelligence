@@ -2,11 +2,11 @@
  * Rectified Linear Unit (ReLU)
  */
 export namespace ReLU {
-    export function activation(synapse) {
-        return synapse > 0 ? synapse : 0;
-    }
+  export function activation(synapse) {
+    return synapse > 0 ? synapse : 0;
+  }
 
-    export function prime(synapse) {
-        return synapse;
-    }
+  export function prime(synapse) {
+    return synapse;
+  }
 }
