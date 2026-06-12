@@ -20,6 +20,19 @@ function useSeededRandom(seed: number = 2): () => void {
 @suite
 export class BackpropagationTest {
   @test
+  public rejectsBinaryActivation() {
+    const network = new Backpropagation({
+      epochs: 1,
+      activationFunction: ActivationFunctionType.BINARY
+    });
+
+    assert.throws(
+      () => network.addLayer(1).learn([{ input: [1], output: 1 }]),
+      'Binary activation is not differentiable and cannot be used with backpropagation'
+    );
+  }
+
+  @test
   public testOR() {
     const dataset = [
       { input: [0, 0], output: 0 },

@@ -7,6 +7,6 @@ export namespace ReLU {
   }
 
   export function prime(synapse) {
-    return synapse;
+    return synapse > 0 ? 1 : 0;
   }
 }

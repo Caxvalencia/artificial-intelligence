@@ -1,11 +1,19 @@
 import { ActivationFunctionType } from './activation-functions/activation-function';
 import { SynapticProcessor } from './synaptic-processor';
 
+interface PerceptronTrainingStats {
+  epochs: number;
+  errors: number;
+  converged: boolean;
+}
+
 export class Perceptron {
   dataStack: any[];
   weights: Float64Array;
   threshold: number;
   synapticProcessor: SynapticProcessor;
+  maxEpochs: number;
+  trainingStats: PerceptronTrainingStats;
 
   funcBack: () => void;
 
@@ -15,6 +23,8 @@ export class Perceptron {
 
     this.synapticProcessor = new SynapticProcessor(activationFunction);
     this.dataStack = [];
+    this.maxEpochs = 8000;
+    this.trainingStats = { epochs: 0, errors: 0, converged: false };
   }
 
   addData(data: Float64Array, output: number) {
@@ -28,11 +38,10 @@ export class Perceptron {
       this.assignWeights();
     }
 
-    const LIMIT_ERRORS: number = 8000;
-    let counterErrors = 0;
+    this.trainingStats = { epochs: 0, errors: 0, converged: false };
 
-    const runEpochs = () => {
-      let hasError = false;
+    for (let epoch = 1; epoch <= this.maxEpochs; epoch++) {
+      let errors = 0;
 
       for (let i = 0; i < this.dataStack.length; i++) {
         this.synapticProcessor
@@ -45,29 +54,26 @@ export class Perceptron {
           this.synapticProcessor.recalculateWeights(this.weights);
           this.threshold += this.synapticProcessor.delta;
 
-          hasError = true;
+          errors++;
           this.funcBack();
         }
       }
 
-      if (hasError) {
-        counterErrors++;
+      this.trainingStats = {
+        epochs: epoch,
+        errors,
+        converged: errors === 0
+      };
 
-        if (counterErrors >= LIMIT_ERRORS) {
-          counterErrors = 0;
-
-          throw Error('Maximum error limit reached');
-        }
-
-        return runEpochs();
+      if (this.trainingStats.converged) {
+        return this;
       }
+    }
 
-      counterErrors = 0;
-    };
-
-    runEpochs();
-
-    return this;
+    throw new Error(
+      `Perceptron did not converge after ${this.maxEpochs} epochs; ` +
+        `last epoch errors: ${this.trainingStats.errors}`
+    );
   }
 
   process(data: Float64Array) {
@@ -79,6 +85,16 @@ export class Perceptron {
 
   setWeights(weights: Float64Array) {
     this.weights = weights;
+
+    return this;
+  }
+
+  setMaxEpochs(maxEpochs: number) {
+    if (!Number.isInteger(maxEpochs) || maxEpochs < 1) {
+      throw new RangeError('maxEpochs must be a positive integer');
+    }
+
+    this.maxEpochs = maxEpochs;
 
     return this;
   }

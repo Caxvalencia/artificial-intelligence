@@ -78,9 +78,19 @@ console.log(and.process(new Float64Array([1, 1]))); // 1
 console.log(and.process(new Float64Array([0, 1]))); // 0
 ```
 
-El entrenamiento lanza `Maximum error limit reached` cuando no logra converger
-después de 8000 iteraciones con errores. Esto ocurre, por ejemplo, al intentar
-enseñar XOR a un perceptrón simple.
+El entrenamiento intenta como máximo 8000 épocas de forma predeterminada. El
+límite puede configurarse y las estadísticas de la última ejecución quedan
+disponibles en `trainingStats`:
+
+```ts
+and.setMaxEpochs(2000).learn();
+
+console.log(and.trainingStats);
+// { epochs: number, errors: number, converged: boolean }
+```
+
+Si no converge, lanza un error descriptivo. Esto ocurre, por ejemplo, al
+intentar enseñar XOR a un perceptrón simple.
 
 ### Red multicapa con backpropagation
 
@@ -128,6 +138,8 @@ El punto de entrada `src/index.ts` exporta las clases `Perceptron` y
 | `learn()`               | Entrena hasta converger o alcanzar el límite de errores.                     |
 | `process(data)`         | Clasifica una entrada y devuelve `0` o `1` con la activación predeterminada. |
 | `setWeights(weights)`   | Reemplaza manualmente los pesos del perceptrón.                              |
+| `setMaxEpochs(epochs)`  | Configura el límite de épocas y devuelve la instancia.                       |
+| `trainingStats`         | Estadísticas de la última ejecución de entrenamiento.                        |
 
 Los datos de entrada deben tener siempre la misma longitud.
 
@@ -180,6 +192,9 @@ experimentar dentro del repositorio puede importarse directamente:
 ```ts
 import { ActivationFunctionType } from './src/activation-functions/activation-function';
 ```
+
+La activación binaria está destinada al perceptrón simple. No puede utilizarse
+para backpropagation porque la función escalón no es diferenciable.
 
 ## Guardar y cargar modelos
 
