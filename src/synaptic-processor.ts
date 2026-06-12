@@ -22,7 +22,11 @@ export class SynapticProcessor {
    * @returns {number}
    */
   output(): number {
-    return this.activationFunction.activation(this.synapse);
+    const output = this.activationFunction.activation(this.synapse);
+
+    this.assertFinite(output, 'Activation output');
+
+    return output;
   }
 
   /**
@@ -31,9 +35,13 @@ export class SynapticProcessor {
   recalculateWeights(weights: Float64Array) {
     const error = this.outputExpected - this.output();
     this.delta = this.learningRate * error;
+    this.assertFinite(this.delta, 'Weight update delta');
 
     for (let i = 0; i < weights.length; i++) {
-      weights[i] += this.data[i] * this.delta;
+      const updatedWeight = weights[i] + this.data[i] * this.delta;
+
+      this.assertFinite(updatedWeight, `Weight ${i}`);
+      weights[i] = updatedWeight;
     }
   }
 
@@ -55,12 +63,14 @@ export class SynapticProcessor {
     }
 
     this.synapse += threshold;
+    this.assertFinite(this.synapse, 'Synaptic calculation');
 
     return this;
   }
 
   calculateError() {
     this.error = this.outputExpected - this.output();
+    this.assertFinite(this.error, 'Prediction error');
 
     return this;
   }
@@ -78,8 +88,18 @@ export class SynapticProcessor {
   }
 
   setLearningFactor(learningFactor) {
+    if (!Number.isFinite(learningFactor) || learningFactor <= 0) {
+      throw new RangeError('Learning factor must be a positive finite number');
+    }
+
     this.learningRate = learningFactor;
 
     return this;
+  }
+
+  private assertFinite(value: number, label: string) {
+    if (!Number.isFinite(value)) {
+      throw new RangeError(`${label} produced a non-finite value`);
+    }
   }
 }

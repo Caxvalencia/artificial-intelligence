@@ -57,6 +57,8 @@ export class Neuron extends Perceptron {
     const momentumFactor = 0.77;
     let deltaWeights: number = 0;
 
+    this.assertFinite(delta, 'Neuron weight update delta');
+
     for (let i = 0; i < this.weights.length; i++) {
       if (this.currentData[i] === 0) {
         continue;
@@ -65,14 +67,24 @@ export class Neuron extends Perceptron {
       deltaWeights = momentumFactor * (this.weights[i] - this.beforeWeights[i]);
 
       this.beforeWeights[i] = this.weights[i];
-      this.weights[i] += this.currentData[i] * delta + deltaWeights;
+      const updatedWeight = this.weights[i] + this.currentData[i] * delta + deltaWeights;
+
+      this.assertFinite(updatedWeight, `Neuron weight ${i}`);
+      this.weights[i] = updatedWeight;
     }
 
-    this.threshold += delta;
+    const updatedThreshold = this.threshold + delta;
+
+    this.assertFinite(updatedThreshold, 'Neuron threshold');
+    this.threshold = updatedThreshold;
   }
 
   output(): number {
-    return this.synapticProcessor.activationFunction.activation(this.synapse);
+    const output = this.synapticProcessor.activationFunction.activation(this.synapse);
+
+    this.assertFinite(output, 'Neuron activation output');
+
+    return output;
   }
 
   process() {
@@ -103,6 +115,7 @@ export class Neuron extends Perceptron {
 
   calculateErrorDerivated(factorDelta) {
     this.error = factorDelta * this.prime();
+    this.assertFinite(this.error, 'Neuron error');
 
     return this;
   }
@@ -131,5 +144,11 @@ export class Neuron extends Perceptron {
     this.threshold = threshold;
 
     return this;
+  }
+
+  private assertFinite(value: number, label: string) {
+    if (!Number.isFinite(value)) {
+      throw new RangeError(`${label} produced a non-finite value`);
+    }
   }
 }

@@ -184,6 +184,10 @@ Backpropagation requiere al menos una capa y un dataset no vacío. Todas las
 muestras deben tener la misma dimensión y contener números finitos. El
 entrenamiento crea copias internas, por lo que no modifica el dataset recibido.
 
+Las activaciones y actualizaciones también se comprueban durante el
+entrenamiento. Si una suma, pérdida, peso o umbral deja de ser finito, el proceso
+falla explícitamente en lugar de continuar con valores `NaN` o infinitos.
+
 ### Funciones de activación
 
 Internamente existen los siguientes valores de `ActivationFunctionType`:

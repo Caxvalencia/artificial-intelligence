@@ -86,6 +86,20 @@ export class BackpropagationTest {
   }
 
   @test
+  public rejectsNonFiniteTrainingCalculations() {
+    const network = new Backpropagation({ epochs: 1 }).importModel({
+      layers: [1],
+      thresholds: [[0]],
+      weights: [[[Number.MAX_VALUE]]]
+    });
+
+    assert.throws(
+      () => network.learn([{ input: [Number.MAX_VALUE], output: 1 }]),
+      'Synaptic calculation produced a non-finite value'
+    );
+  }
+
+  @test
   public runsExactlyConfiguredEpochs() {
     const dataset = [{ input: [1], output: 1 }];
     const zeroEpochNetwork = new Backpropagation({ epochs: 0 }).addLayer(1);

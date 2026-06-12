@@ -22,7 +22,7 @@ pnpm production
 | M-03 | Media     | Corregir conteo de épocas y pérdida               | Completada |
 | M-04 | Alta      | Persistir configuración completa del modelo       | Pendiente  |
 | M-05 | Media     | Validar entradas, datasets y modelos              | Completada |
-| M-06 | Media     | Mejorar estabilidad numérica                      | Pendiente  |
+| M-06 | Media     | Mejorar estabilidad numérica                      | Completada |
 | M-07 | Alta      | Soportar múltiples neuronas de salida             | Pendiente  |
 | M-08 | Baja      | Hacer configurable el entrenamiento               | Pendiente  |
 | M-09 | Baja      | Reducir acoplamiento interno                      | Pendiente  |
@@ -266,6 +266,16 @@ calcula exponenciales directamente.
 - Activaciones y derivadas nunca devuelven `NaN` para entradas finitas.
 - Existen pruebas con valores extremos.
 - El entrenamiento falla explícitamente si aparecen valores no finitos.
+
+**Decisión implementada**
+
+- La activación sigmoidal usa una formulación estable para valores positivos y
+  negativos extremos.
+- Su derivada se calcula como `output * (1 - output)`.
+- Sumas sinápticas, activaciones, errores, deltas, pérdidas, pesos y umbrales se
+  validan antes de continuar.
+- Los desbordamientos generan errores descriptivos; no se aplica clipping
+  silencioso.
 
 ## M-07: Soportar múltiples neuronas de salida
 

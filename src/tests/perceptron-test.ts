@@ -43,6 +43,19 @@ export class PerceptronTest {
   }
 
   @test
+  public rejectsNonFiniteSynapticCalculations() {
+    const perceptron = new Perceptron();
+
+    perceptron.setWeights([Number.MAX_VALUE]);
+    perceptron.threshold = 0;
+
+    assert.throws(
+      () => perceptron.process([Number.MAX_VALUE]),
+      'Synaptic calculation produced a non-finite value'
+    );
+  }
+
+  @test
   public copiesTrainingData() {
     const input = [1, 0];
     const perceptron = new Perceptron().addData(input, 1);

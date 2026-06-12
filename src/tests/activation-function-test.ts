@@ -39,6 +39,11 @@ export class ActivationFunctionTest {
 
     assert.closeTo(sigmoidal.activation(0), 0.5, 1e-12);
     assert.closeTo(sigmoidal.prime(0), 0.25, 1e-12);
+    assert.equal(sigmoidal.activation(1000), 1);
+    assert.equal(sigmoidal.activation(-1000), 0);
+    assert.equal(sigmoidal.prime(1000), 0);
+    assert.equal(sigmoidal.prime(-1000), 0);
+    assert.isTrue(Number.isFinite(sigmoidal.prime(1000)));
   }
 
   @test
@@ -47,5 +52,9 @@ export class ActivationFunctionTest {
 
     assert.closeTo(hyperbolicTangent.activation(0), 0, 1e-12);
     assert.closeTo(hyperbolicTangent.prime(0), 1, 1e-12);
+    assert.equal(hyperbolicTangent.activation(1000), 1);
+    assert.equal(hyperbolicTangent.activation(-1000), -1);
+    assert.equal(hyperbolicTangent.prime(1000), 0);
+    assert.equal(hyperbolicTangent.prime(-1000), 0);
   }
 }

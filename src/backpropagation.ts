@@ -225,6 +225,10 @@ export class Backpropagation {
       this.forwardpropagation(data);
       totalLoss += this.backpropagation(data.output);
 
+      if (!Number.isFinite(totalLoss)) {
+        throw new RangeError('Epoch loss produced a non-finite value');
+      }
+
       this.layers.forEach((layer) => {
         for (let neuronIdx = 0; neuronIdx < layer.length; neuronIdx++) {
           const neuron = layer[neuronIdx];
@@ -233,7 +237,13 @@ export class Backpropagation {
       });
     }
 
-    return totalLoss / dataset.length;
+    const averageLoss = totalLoss / dataset.length;
+
+    if (!Number.isFinite(averageLoss)) {
+      throw new RangeError('Average epoch loss produced a non-finite value');
+    }
+
+    return averageLoss;
   }
 
   /**
