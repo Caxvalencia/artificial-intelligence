@@ -10,15 +10,32 @@
       >
         Resetear Vista
       </button>
-      <button class="btn btn-secondary btn-xs" (click)="loadPreset('cnn')">Flow CNN</button>
-      <button class="btn btn-secondary btn-xs" (click)="loadPreset('dense')">Flow MLP</button>
-      <button class="btn btn-secondary btn-xs" (click)="loadPreset('transformer')">
+      <button
+        class="btn btn-secondary btn-xs"
+        (click)="loadPreset('cnn')"
+        data-tooltip-bottom="Red Convolucional estándar. Extrae características locales espaciales en 2D. Ideal para imágenes."
+      >
+        Flow CNN
+      </button>
+      <button
+        class="btn btn-secondary btn-xs"
+        (click)="loadPreset('dense')"
+        data-tooltip-bottom="Perceptrón Multicapa tradicional. Compuesto enteramente por capas Densas conectadas."
+      >
+        Flow MLP
+      </button>
+      <button
+        class="btn btn-secondary btn-xs"
+        (click)="loadPreset('transformer')"
+        data-tooltip-bottom="Red con Autoatención. Procesa las filas como secuencia temporal para aprender relaciones espaciales."
+      >
         Flow Attention
       </button>
       <button
         class="btn btn-secondary btn-xs"
         style="border-color: #10b981; color: #10b981"
         (click)="loadPreset('hybrid')"
+        data-tooltip-bottom="La más óptima: Combina Convoluciones locales (CNN) con Autoatención espacial global para máxima precisión en dígitos."
       >
         Flow Híbrido Óptimo
       </button>
@@ -26,6 +43,7 @@
         class="btn btn-secondary btn-xs"
         style="border-color: #fbbf24; color: #fbbf24"
         (click)="loadPreset('innovative')"
+        data-tooltip-bottom="Vision Transformer innovador: Divide el dígito en parches horizontales secuenciales y aplica autoatención en dos niveles."
       >
         Flow ViT Parches (Innovador)
       </button>
@@ -41,7 +59,7 @@
     <div
       class="grid-background"
       [style.backgroundPosition]="panX + 'px ' + panY + 'px'"
-      [style.backgroundSize]="(24 * zoom) + 'px ' + (24 * zoom) + 'px'"
+      [style.backgroundSize]="24 * zoom + 'px ' + 24 * zoom + 'px'"
     ></div>
 
     <!-- Transform wrapper for SVG and nodes -->
@@ -68,6 +86,7 @@
           [class.node-dense]="layer.type === 'dense'"
           [class.node-conv]="layer.type === 'conv2d'"
           [class.node-attention]="layer.type === 'attention'"
+          [attr.data-tooltip]="getNodeTooltip(layer.type)"
           (mousedown)="selectLayer(layer); $event.stopPropagation()"
         >
           <!-- Handle for dragging -->
@@ -144,22 +163,46 @@
   <div class="workspace-toolbox">
     <span class="toolbox-label">Agregar capa al flujo:</span>
     <div class="toolbox-buttons">
-      <button class="btn btn-secondary btn-sm" (click)="addLayer('dense')">
+      <button
+        class="btn btn-secondary btn-sm"
+        (click)="addLayer('dense')"
+        data-tooltip="Capa completamente conectada (MLP). Procesa características y mapea al espacio de salida final."
+      >
         <i class="ti ti-network"></i> Dense
       </button>
-      <button class="btn btn-secondary btn-sm" (click)="addLayer('conv2d')">
+      <button
+        class="btn btn-secondary btn-sm"
+        (click)="addLayer('conv2d')"
+        data-tooltip="Capa Convolucional 2D. Utiliza filtros para extraer bordes, esquinas y patrones locales de la imagen."
+      >
         <i class="ti ti-grid-3x3"></i> Conv2D
       </button>
-      <button class="btn btn-secondary btn-sm" (click)="addLayer('maxPool2d')">
+      <button
+        class="btn btn-secondary btn-sm"
+        (click)="addLayer('maxPool2d')"
+        data-tooltip="Capa de Reducción Max Pooling. Reduce el tamaño de los mapas de características conservando los valores máximos."
+      >
         <i class="ti ti-search"></i> MaxPool
       </button>
-      <button class="btn btn-secondary btn-sm" (click)="addLayer('flatten')">
+      <button
+        class="btn btn-secondary btn-sm"
+        (click)="addLayer('flatten')"
+        data-tooltip="Aplanamiento. Convierte tensores multidimensionales (2D/3D) a un vector unidimensional (1D)."
+      >
         <i class="ti ti-layout-list"></i> Flatten
       </button>
-      <button class="btn btn-secondary btn-sm" (click)="addLayer('dropout')">
+      <button
+        class="btn btn-secondary btn-sm"
+        (click)="addLayer('dropout')"
+        data-tooltip="Capa de Regularización. Apaga neuronas aleatoriamente en entrenamiento para evitar el sobreajuste (overfitting)."
+      >
         <i class="ti ti-droplet"></i> Dropout
       </button>
-      <button class="btn btn-secondary btn-sm" (click)="addLayer('attention')">
+      <button
+        class="btn btn-secondary btn-sm"
+        (click)="addLayer('attention')"
+        data-tooltip="Capa de Autoatención de consulta-clave-valor (Self-Attention). Relaciona dinámicamente diferentes regiones."
+      >
         <i class="ti ti-sparkles"></i> Attention
       </button>
     </div>

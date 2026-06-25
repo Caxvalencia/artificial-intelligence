@@ -184,4 +184,25 @@ export class WorkspaceComponent {
     const dx = Math.max(40, Math.abs(x2 - x1) * 0.5);
     return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
   }
+
+  getNodeTooltip(type: string): string {
+    switch (type) {
+      case 'dense':
+        return 'Capa Dense: Neuronas completamente conectadas. Mapea y procesa características complejas para la clasificación.';
+      case 'conv2d':
+        return 'Capa Conv2D: Convolución espacial 2D. Aplica filtros para extraer patrones visuales como bordes, curvas y texturas.';
+      case 'maxPool2d':
+        return 'Capa MaxPool2D: Submuestreo. Reduce la dimensionalidad espacial reteniendo los valores más importantes.';
+      case 'flatten':
+        return 'Capa Flatten: Aplanamiento. Convierte mapas tridimensionales a un formato lineal 1D para conectar con capas densas.';
+      case 'dropout':
+        return 'Capa Dropout: Regularización estocástica. Apaga neuronas al azar para evitar sobreajuste y co-adaptación.';
+      case 'reshape':
+        return 'Capa Reshape: Redefinición dimensional. Cambia la forma espacial del tensor (ej. de vector 1D a grilla 2D/3D).';
+      case 'attention':
+        return 'Capa Attention: Autoatención atencional. Relaciona dinámicamente la importancia de partes distantes del tensor.';
+      default:
+        return '';
+    }
+  }
 }
