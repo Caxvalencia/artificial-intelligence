@@ -25,7 +25,9 @@ export class WorkspaceComponent {
   @Output() layerAdded = new EventEmitter<
     'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'dropout' | 'attention'
   >();
-  @Output() presetLoaded = new EventEmitter<'cnn' | 'dense' | 'transformer'>();
+  @Output() presetLoaded = new EventEmitter<
+    'cnn' | 'dense' | 'transformer' | 'hybrid' | 'innovative'
+  >();
 
   // Node Drag and Drop
   public activeDragNode: LayerDescription | null = null;
@@ -34,7 +36,8 @@ export class WorkspaceComponent {
   private nodeStartX = 0;
   private nodeStartY = 0;
 
-  // Workspace Panning
+  // Workspace Zoom & Panning
+  public zoom = 1.0;
   public panX = 0;
   public panY = 0;
   public isPanning = false;
@@ -97,14 +100,54 @@ export class WorkspaceComponent {
   }
 
   onWorkspaceWheel(e: WheelEvent) {
-    this.panX -= e.deltaX;
-    this.panY -= e.deltaY;
-    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+      // Zoom centrado en la posición del puntero del ratón
+      const zoomFactor = 1.1;
+      const oldZoom = this.zoom;
+      let newZoom = this.zoom;
+
+      if (e.deltaY < 0) {
+        newZoom = Math.min(2.0, this.zoom * zoomFactor);
+      } else {
+        newZoom = Math.max(0.4, this.zoom / zoomFactor);
+      }
+
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const workspaceX = (mouseX - this.panX) / oldZoom;
+      const workspaceY = (mouseY - this.panY) / oldZoom;
+
+      this.zoom = newZoom;
+      this.panX = mouseX - workspaceX * newZoom;
+      this.panY = mouseY - workspaceY * newZoom;
+
+      e.preventDefault();
+    } else {
+      // Desplazamiento (Pan) estándar
+      this.panX -= e.deltaX;
+      this.panY -= e.deltaY;
+      e.preventDefault();
+    }
+  }
+
+  zoomIn() {
+    this.zoom = Math.min(2.0, this.zoom + 0.15);
+  }
+
+  zoomOut() {
+    this.zoom = Math.max(0.4, this.zoom - 0.15);
+  }
+
+  resetZoom() {
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
   }
 
   resetView() {
-    this.panX = 0;
-    this.panY = 0;
+    this.resetZoom();
   }
 
   selectLayer(layer: LayerDescription) {
@@ -119,7 +162,7 @@ export class WorkspaceComponent {
     this.layerAdded.emit(type);
   }
 
-  loadPreset(type: 'cnn' | 'dense' | 'transformer') {
+  loadPreset(type: 'cnn' | 'dense' | 'transformer' | 'hybrid' | 'innovative') {
     this.presetLoaded.emit(type);
     this.resetView(); // Local reset
   }

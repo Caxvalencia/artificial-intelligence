@@ -263,4 +263,58 @@ export class ModelBuilderService {
       },
     ];
   }
+
+  getDefaultHybridConfig(): LayerDescription[] {
+    return [
+      { id: '1', type: 'reshape', config: { targetShape: [28, 28, 1] } },
+      {
+        id: '2',
+        type: 'conv2d',
+        config: {
+          filters: 16,
+          kernelSize: 3,
+          strides: 1,
+          activation: 'relu',
+          kernelInitializer: 'varianceScaling',
+        },
+      },
+      { id: '3', type: 'maxPool2d', config: { poolSize: [2, 2], strides: [2, 2] } },
+      { id: '4', type: 'reshape', config: { targetShape: [13, 208] } },
+      { id: '5', type: 'attention', config: { units: 64 } },
+      { id: '6', type: 'dropout', config: { rate: 0.2 } },
+      { id: '7', type: 'flatten', config: {} },
+      {
+        id: '8',
+        type: 'dense',
+        config: { units: 64, activation: 'relu', kernelInitializer: 'varianceScaling' },
+      },
+      {
+        id: '9',
+        type: 'dense',
+        config: { units: 10, activation: 'softmax', kernelInitializer: 'varianceScaling' },
+      },
+    ];
+  }
+
+  getDefaultInnovativeConfig(): LayerDescription[] {
+    return [
+      // Vision Transformer compacto por parches horizontales (14 parches de 56 píxeles cada uno)
+      { id: '1', type: 'reshape', config: { targetShape: [14, 56] } },
+      { id: '2', type: 'attention', config: { units: 64 } },
+      { id: '3', type: 'dropout', config: { rate: 0.2 } },
+      { id: '4', type: 'attention', config: { units: 32 } },
+      { id: '5', type: 'flatten', config: {} },
+      {
+        id: '6',
+        type: 'dense',
+        config: { units: 128, activation: 'relu', kernelInitializer: 'varianceScaling' },
+      },
+      { id: '7', type: 'dropout', config: { rate: 0.25 } },
+      {
+        id: '8',
+        type: 'dense',
+        config: { units: 10, activation: 'softmax', kernelInitializer: 'varianceScaling' },
+      },
+    ];
+  }
 }

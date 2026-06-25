@@ -995,3 +995,48 @@ app-learning-charts {
   min-height: 0;
   position: relative;
 }
+
+/* ZOOM CONTROLS FOR WORKSPACE */
+.workspace-zoom-controls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 18, 28, 0.85);
+  border: 1px solid var(--panel-border);
+  padding: 4px 8px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.zoom-ctrl-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zoom-ctrl-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.zoom-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: center;
+  font-family: monospace;
+}

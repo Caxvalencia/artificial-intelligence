@@ -6,7 +6,7 @@
         class="btn btn-secondary btn-xs"
         style="border-color: var(--accent-cyan); color: var(--accent-cyan)"
         (click)="resetView()"
-        [disabled]="panX === 0 && panY === 0"
+        [disabled]="panX === 0 && panY === 0 && zoom === 1.0"
       >
         Resetear Vista
       </button>
@@ -14,6 +14,20 @@
       <button class="btn btn-secondary btn-xs" (click)="loadPreset('dense')">Flow MLP</button>
       <button class="btn btn-secondary btn-xs" (click)="loadPreset('transformer')">
         Flow Attention
+      </button>
+      <button
+        class="btn btn-secondary btn-xs"
+        style="border-color: #10b981; color: #10b981"
+        (click)="loadPreset('hybrid')"
+      >
+        Flow Híbrido Óptimo
+      </button>
+      <button
+        class="btn btn-secondary btn-xs"
+        style="border-color: #fbbf24; color: #fbbf24"
+        (click)="loadPreset('innovative')"
+      >
+        Flow ViT Parches (Innovador)
       </button>
     </div>
   </div>
@@ -24,10 +38,17 @@
     (mousedown)="startWorkspacePan($event)"
     (wheel)="onWorkspaceWheel($event)"
   >
-    <div class="grid-background" [style.backgroundPosition]="panX + 'px ' + panY + 'px'"></div>
+    <div
+      class="grid-background"
+      [style.backgroundPosition]="panX + 'px ' + panY + 'px'"
+      [style.backgroundSize]="(24 * zoom) + 'px ' + (24 * zoom) + 'px'"
+    ></div>
 
     <!-- Transform wrapper for SVG and nodes -->
-    <div class="workspace-content" [style.transform]="'translate(' + panX + 'px, ' + panY + 'px)'">
+    <div
+      class="workspace-content"
+      [style.transform]="'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')'"
+    >
       <!-- SVG CONNECTIONS OVERLAY -->
       <svg class="svg-connections-overlay">
         @for (layer of layers; track layer.id; let idx = $index) {
@@ -102,6 +123,20 @@
           <div class="port port-output"></div>
         </div>
       }
+    </div>
+
+    <!-- ZOOM FLOATING CONTROLS -->
+    <div class="workspace-zoom-controls">
+      <button class="zoom-ctrl-btn" (click)="zoomIn()" title="Acercar">
+        <i class="ti ti-plus"></i>
+      </button>
+      <span class="zoom-pct">{{ (zoom * 100).toFixed(0) }}%</span>
+      <button class="zoom-ctrl-btn" (click)="zoomOut()" title="Alejar">
+        <i class="ti ti-minus"></i>
+      </button>
+      <button class="zoom-ctrl-btn" (click)="resetZoom()" title="Restablecer">
+        <i class="ti ti-focus-2"></i>
+      </button>
     </div>
   </div>
 

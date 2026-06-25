@@ -77,7 +77,7 @@ export class App implements OnInit {
   }
 
   // Pre-configured architecture presets
-  loadPreset(type: 'cnn' | 'dense' | 'transformer') {
+  loadPreset(type: 'cnn' | 'dense' | 'transformer' | 'hybrid' | 'innovative') {
     let presetLayers: LayerDescription[] = [];
     if (type === 'cnn') {
       presetLayers = this.builderService.getDefaultCNNConfig();
@@ -85,6 +85,10 @@ export class App implements OnInit {
       presetLayers = this.builderService.getDefaultDenseConfig();
     } else if (type === 'transformer') {
       presetLayers = this.builderService.getDefaultTransformerConfig();
+    } else if (type === 'hybrid') {
+      presetLayers = this.builderService.getDefaultHybridConfig();
+    } else if (type === 'innovative') {
+      presetLayers = this.builderService.getDefaultInnovativeConfig();
     }
 
     // Set horizontal sequence layout coordinates
