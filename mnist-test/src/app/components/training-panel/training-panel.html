@@ -182,28 +182,10 @@
   </div>
 </div>
 
-<!-- METRICS & CHARTS -->
-<div class="panel-card charts-panel">
-  <div class="panel-header">
-    <h2>Gráficas de Aprendizaje</h2>
-    <span class="live-status" *ngIf="trainingProgress.isTraining">
-      Época: {{ trainingProgress.epoch < epochs ? trainingProgress.epoch + 1 : epochs }}/{{
-        epochs
-      }}
-      @if (trainingProgress.batch > 0) {
-        | Lote: {{ trainingProgress.batch }} | Pérdida: {{ trainingProgress.loss.toFixed(4) }} |
-        Prec: {{ (trainingProgress.acc * 100).toFixed(0) }}%
-      }
-    </span>
-  </div>
-  <div class="chart-canvas-container">
-    <canvas #chartCanvas></canvas>
-  </div>
-</div>
-
 <!-- LOG TERMINAL -->
 <div class="panel-card logs-panel">
   <h2>Registro de Consola</h2>
+
   <div class="console-box scrollable">
     @for (msg of logs; track $index) {
       <div class="console-line">{{ msg }}</div>

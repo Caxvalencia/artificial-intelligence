@@ -1,13 +1,14 @@
-import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit, ViewEncapsulation, inject, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MnistDataService } from './services/mnist-data.service';
-import { ModelBuilderService, LayerDescription } from './services/model-builder.service';
-import { TrainingService, TrainingProgress } from './services/training.service';
 import { HeaderComponent } from './components/header/header';
-import { WorkspaceComponent } from './components/workspace/workspace';
-import { TrainingPanelComponent } from './components/training-panel/training-panel';
+import { LearningChartsComponent } from './components/learning-charts/learning-charts';
 import { TestingPanelComponent } from './components/testing-panel/testing-panel';
+import { TrainingPanelComponent } from './components/training-panel/training-panel';
+import { WorkspaceComponent } from './components/workspace/workspace';
+import { MnistDataService } from './services/mnist-data.service';
+import { LayerDescription, ModelBuilderService } from './services/model-builder.service';
+import { TrainingProgress, TrainingService } from './services/training.service';
 
 @Component({
   selector: 'app-root',
@@ -19,6 +20,7 @@ import { TestingPanelComponent } from './components/testing-panel/testing-panel'
     WorkspaceComponent,
     TrainingPanelComponent,
     TestingPanelComponent,
+    LearningChartsComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -28,6 +30,7 @@ export class App implements OnInit {
   public dataService = inject(MnistDataService);
   public builderService = inject(ModelBuilderService);
   public trainingService = inject(TrainingService);
+  private cdr = inject(ChangeDetectorRef);
 
   // Hyperparameters
   epochs = 5;
@@ -43,6 +46,7 @@ export class App implements OnInit {
 
   // UI state
   mainTab: 'train' | 'test' = 'train';
+  leftTab: 'canvas' | 'charts' = 'canvas';
   trainingProgress: TrainingProgress = {
     epoch: 0,
     batch: 0,
@@ -63,6 +67,7 @@ export class App implements OnInit {
     // Subscribe to progress
     this.trainingService.progress$.subscribe((progress) => {
       this.trainingProgress = progress;
+      this.cdr.detectChanges();
     });
 
     // Sync backend selection
@@ -177,6 +182,7 @@ export class App implements OnInit {
   }
 
   async startTraining() {
+    this.leftTab = 'charts';
     await this.trainingService.trainModel(this.epochs, this.batchSize);
   }
 

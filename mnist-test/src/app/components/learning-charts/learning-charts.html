@@ -1,0 +1,17 @@
+<div class="panel-card charts-panel large-charts-panel">
+  <div class="panel-header">
+    <h2>Gráficas de Aprendizaje</h2>
+
+    <span class="live-status" *ngIf="progress.isTraining">
+      Época: {{ progress.epoch <= epochs ? progress.epoch : epochs }}/{{ epochs }}
+      @if (progress.batch > 0) {
+        | Lote: {{ progress.batch }} | Pérdida: {{ progress.loss.toFixed(4) }} | Prec:
+        {{ (progress.acc * 100).toFixed(0) }}%
+      }
+    </span>
+  </div>
+
+  <div class="chart-canvas-container">
+    <canvas #chartCanvas></canvas>
+  </div>
+</div>

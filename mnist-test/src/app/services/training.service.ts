@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, NgZone } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgpu';
 import { BehaviorSubject } from 'rxjs';
@@ -21,6 +21,7 @@ export interface TrainingProgress {
 export class TrainingService {
   private dataService = inject(MnistDataService);
   private builderService = inject(ModelBuilderService);
+  private ngZone = inject(NgZone);
 
   public model: tf.LayersModel | null = null;
   public hopfieldNet: HopfieldNetwork | null = null;
@@ -83,10 +84,12 @@ export class TrainingService {
 
   private log(message: string) {
     const currentLogs = this.logMessages$.value;
-    this.logMessages$.next([
-      `[${new Date().toLocaleTimeString()}] ${message}`,
-      ...currentLogs.slice(0, 49),
-    ]);
+    this.ngZone.run(() => {
+      this.logMessages$.next([
+        `[${new Date().toLocaleTimeString()}] ${message}`,
+        ...currentLogs.slice(0, 49),
+      ]);
+    });
   }
 
   async setBackend(backend: 'webgpu' | 'webgl' | 'cpu') {
@@ -161,14 +164,16 @@ export class TrainingService {
       `Iniciando entrenamiento: ${epochs} épocas, Lote: ${batchSize}. backend actual: ${tf.getBackend()}`,
     );
 
-    this.progress$.next({
-      epoch: 0,
-      batch: 0,
-      loss: 0,
-      acc: 0,
-      valLoss: 0,
-      valAcc: 0,
-      isTraining: true,
+    this.ngZone.run(() => {
+      this.progress$.next({
+        epoch: 0,
+        batch: 0,
+        loss: 0,
+        acc: 0,
+        valLoss: 0,
+        valAcc: 0,
+        isTraining: true,
+      });
     });
 
     try {
@@ -177,30 +182,79 @@ export class TrainingService {
         batchSize,
         validationData: [testData.xs, testData.ys],
         callbacks: {
+          onEpochBegin: async (epoch, logs) => {
+            const current = this.progress$.value;
+            this.ngZone.run(() => {
+              this.progress$.next({
+                ...current,
+                epoch: epoch + 1,
+                batch: 0,
+              });
+            });
+          },
           onBatchEnd: async (batch, logs) => {
             const current = this.progress$.value;
-            this.progress$.next({
-              ...current,
-              batch: batch + 1,
-              loss: logs ? logs['loss'] || current.loss : current.loss,
-              acc: logs ? logs['acc'] || current.acc : current.acc,
+            this.ngZone.run(() => {
+              const loss = logs
+                ? logs['loss'] !== undefined
+                  ? logs['loss']
+                  : current.loss
+                : current.loss;
+              const acc = logs
+                ? logs['acc'] !== undefined
+                  ? logs['acc']
+                  : logs['accuracy'] !== undefined
+                    ? logs['accuracy']
+                    : current.acc
+                : current.acc;
+              this.progress$.next({
+                ...current,
+                batch: batch + 1,
+                loss,
+                acc,
+              });
             });
             // Ceder control al navegador para refrescar UI y logs
             await tf.nextFrame();
           },
           onEpochEnd: (epoch, logs) => {
             if (logs) {
-              this.progress$.next({
-                epoch: epoch + 1,
-                batch: 0,
-                loss: logs['loss'] || 0,
-                acc: logs['acc'] || 0,
-                valLoss: logs['valLoss'] || 0,
-                valAcc: logs['valAcc'] || 0,
-                isTraining: true,
+              const loss = logs['loss'] !== undefined ? logs['loss'] : 0;
+              const acc =
+                logs['acc'] !== undefined
+                  ? logs['acc']
+                  : logs['accuracy'] !== undefined
+                    ? logs['accuracy']
+                    : 0;
+              const valLoss =
+                logs['val_loss'] !== undefined
+                  ? logs['val_loss']
+                  : logs['valLoss'] !== undefined
+                    ? logs['valLoss']
+                    : 0;
+              const valAcc =
+                logs['val_acc'] !== undefined
+                  ? logs['val_acc']
+                  : logs['val_accuracy'] !== undefined
+                    ? logs['val_accuracy']
+                    : logs['valAcc'] !== undefined
+                      ? logs['valAcc']
+                      : 0;
+
+              this.ngZone.run(() => {
+                this.progress$.next({
+                  epoch: epoch + 1,
+                  batch: 0,
+                  loss,
+                  acc,
+                  valLoss,
+                  valAcc,
+                  isTraining: true,
+                });
               });
+
               this.log(
-                `Época ${epoch + 1}/${epochs} - Pérdida: ${logs['loss'].toFixed(4)} - Prec.: ${(logs['acc'] * 100).toFixed(2)}% - Val Pérdida: ${logs['valLoss'].toFixed(4)} - Val Prec.: ${(logs['valAcc'] * 100).toFixed(2)}%`,
+                `Época ${epoch + 1}/${epochs} - Pérdida: ${loss.toFixed(4)} - Prec.: ${(acc * 100).toFixed(2)}% - Val Pérdida: ${valLoss.toFixed(4)} - Val Prec.: ${(valAcc * 100).toFixed(2)}%`,
               );
             }
           },
@@ -217,7 +271,9 @@ export class TrainingService {
       testData.ys.dispose();
 
       const current = this.progress$.value;
-      this.progress$.next({ ...current, isTraining: false });
+      this.ngZone.run(() => {
+        this.progress$.next({ ...current, isTraining: false });
+      });
     }
   }
 

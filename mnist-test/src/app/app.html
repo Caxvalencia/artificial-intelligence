@@ -10,15 +10,42 @@
 
   <!-- MAIN WORKSPACE LAYOUT -->
   <div class="studio-layout">
-    <!-- LEFT SIDE: NODE WORKSPACE -->
-    <app-workspace
-      [layers]="layers"
-      [selectedLayer]="selectedLayer"
-      (layerSelected)="selectLayer($event)"
-      (layerRemoved)="removeLayer($event)"
-      (layerAdded)="addLayer($event)"
-      (presetLoaded)="loadPreset($event)"
-    ></app-workspace>
+    <!-- LEFT SIDE: NODE WORKSPACE OR CHARTS (TABS) -->
+    <div class="left-workspace-panel">
+      <!-- TABS DE NAVEGACIÓN DEL WORKSPACE -->
+      <div class="workspace-tabs-header">
+        <button
+          class="workspace-tab-btn"
+          [class.active]="leftTab === 'canvas'"
+          (click)="leftTab = 'canvas'"
+        >
+          <i class="ti ti-binary"></i> Lienzo de Arquitectura
+        </button>
+        <button
+          class="workspace-tab-btn"
+          [class.active]="leftTab === 'charts'"
+          (click)="leftTab = 'charts'"
+        >
+          <i class="ti ti-chart-line"></i> Gráficas de Aprendizaje
+        </button>
+      </div>
+
+      <!-- CONTENIDOS -->
+      <div [class.hidden]="leftTab !== 'canvas'" class="workspace-tab-content">
+        <app-workspace
+          [layers]="layers"
+          [selectedLayer]="selectedLayer"
+          (layerSelected)="selectLayer($event)"
+          (layerRemoved)="removeLayer($event)"
+          (layerAdded)="addLayer($event)"
+          (presetLoaded)="loadPreset($event)"
+        ></app-workspace>
+      </div>
+
+      <div [class.hidden]="leftTab !== 'charts'" class="workspace-tab-content charts-tab-content">
+        <app-learning-charts [progress]="trainingProgress" [epochs]="epochs"></app-learning-charts>
+      </div>
+    </div>
 
     <!-- RIGHT SIDE: CONFIG PANEL & TESTING -->
     <div class="control-and-testing-panel">
