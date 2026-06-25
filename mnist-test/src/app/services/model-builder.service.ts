@@ -55,9 +55,23 @@ export class SelfAttentionLayer extends tf.layers.Layer {
   override call(inputs: tf.Tensor | tf.Tensor[], kwargs: any): tf.Tensor | tf.Tensor[] {
     return tf.tidy(() => {
       const input = Array.isArray(inputs) ? inputs[0] : inputs;
-      const q = tf.dot(input, this.wQ!.read());
-      const k = tf.dot(input, this.wK!.read());
-      const v = tf.dot(input, this.wV!.read());
+      const shape = input.shape;
+      const seqLen = shape[1] as number;
+      const features = shape[2] as number;
+
+      // Aplanar a 2D para realizar la proyección lineal de pesos de forma segura
+      // Esto evita el bug de gradientes de BatchMatMul de tensores 3D x 2D en TFJS
+      const input2D = tf.reshape(input, [-1, features]);
+
+      // Proyección Q, K, V en 2D
+      const q2D = tf.matMul(input2D, this.wQ!.read());
+      const k2D = tf.matMul(input2D, this.wK!.read());
+      const v2D = tf.matMul(input2D, this.wV!.read());
+
+      // Reconstruir tensores 3D [batch, seqLen, units]
+      const q = tf.reshape(q2D, [-1, seqLen, this.units]);
+      const k = tf.reshape(k2D, [-1, seqLen, this.units]);
+      const v = tf.reshape(v2D, [-1, seqLen, this.units]);
 
       // Scaled Dot-Product Attention: Softmax( (Q * K^T) / sqrt(d) ) * V
       const scores = tf.matMul(q, k, false, true);
