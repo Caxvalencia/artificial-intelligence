@@ -1,0 +1,212 @@
+<!-- SELECTED NODE PARAMETER DRAWER -->
+@if (selectedLayer) {
+  <div class="panel-card node-config-panel">
+    <h2>Parámetros del Nodo: {{ selectedLayer.type.toUpperCase() }}</h2>
+    <div class="node-config-fields">
+      @if (selectedLayer.type === 'dense') {
+        <div class="config-field">
+          <label>Unidades / Neuronas</label>
+          <input
+            type="number"
+            [ngModel]="selectedLayer.config.units"
+            (ngModelChange)="selectedLayer.config.units = $event; onCompileModel()"
+            min="1"
+            max="1024"
+          />
+        </div>
+        <div class="config-field">
+          <label>Función de Activación</label>
+          <select
+            [ngModel]="selectedLayer.config.activation"
+            (ngModelChange)="selectedLayer.config.activation = $event; onCompileModel()"
+          >
+            <option value="relu">ReLU</option>
+            <option value="sigmoid">Sigmoid</option>
+            <option value="softmax">Softmax</option>
+            <option value="linear">Linear</option>
+          </select>
+        </div>
+      }
+
+      @if (selectedLayer.type === 'conv2d') {
+        <div class="config-field">
+          <label>Filtros</label>
+          <input
+            type="number"
+            [ngModel]="selectedLayer.config.filters"
+            (ngModelChange)="selectedLayer.config.filters = $event; onCompileModel()"
+            min="1"
+            max="128"
+          />
+        </div>
+        <div class="config-field">
+          <label>Kernel Size (NxN)</label>
+          <input
+            type="number"
+            [ngModel]="selectedLayer.config.kernelSize"
+            (ngModelChange)="selectedLayer.config.kernelSize = $event; onCompileModel()"
+            min="1"
+            max="7"
+          />
+        </div>
+        <div class="config-field">
+          <label>Strides</label>
+          <input
+            type="number"
+            [ngModel]="selectedLayer.config.strides"
+            (ngModelChange)="selectedLayer.config.strides = $event; onCompileModel()"
+            min="1"
+            max="4"
+          />
+        </div>
+        <div class="config-field">
+          <label>Función de Activación</label>
+          <select
+            [ngModel]="selectedLayer.config.activation"
+            (ngModelChange)="selectedLayer.config.activation = $event; onCompileModel()"
+          >
+            <option value="relu">ReLU</option>
+            <option value="sigmoid">Sigmoid</option>
+          </select>
+        </div>
+      }
+
+      @if (selectedLayer.type === 'dropout') {
+        <div class="config-field">
+          <label>Tasa de Dropout (0.0 - 0.9)</label>
+          <input
+            type="number"
+            step="0.05"
+            [ngModel]="selectedLayer.config.rate"
+            (ngModelChange)="selectedLayer.config.rate = $event; onCompileModel()"
+            min="0"
+            max="0.9"
+          />
+        </div>
+      }
+
+      @if (selectedLayer.type === 'attention') {
+        <div class="config-field">
+          <label>Dimensión de Embed / Atención</label>
+          <input
+            type="number"
+            [ngModel]="selectedLayer.config.units"
+            (ngModelChange)="selectedLayer.config.units = $event; onCompileModel()"
+            min="8"
+            max="256"
+          />
+        </div>
+      }
+
+      @if (selectedLayer.type === 'reshape') {
+        <div class="config-field">
+          <label>Forma del Tensor Target (separada por comas)</label>
+          <span class="static-value"
+            >Forma actual: [{{ selectedLayer.config.targetShape.join(', ') }}]</span
+          >
+        </div>
+      }
+
+      @if (selectedLayer.type === 'maxPool2d' || selectedLayer.type === 'flatten') {
+        <div class="no-params-msg">Esta capa no requiere parámetros adicionales.</div>
+      }
+    </div>
+  </div>
+}
+
+<!-- TRAINING BLOCK -->
+<div class="panel-card config-panel">
+  <h2>Entrenamiento & Hiperparámetros</h2>
+  <div class="hyperparameters-grid">
+    <div class="config-item">
+      <label>Optimizador</label>
+      <select
+        [ngModel]="optimizer"
+        (ngModelChange)="optimizerChange.emit($event); onCompileModel()"
+      >
+        <option value="adam">Adam (Recomendado)</option>
+        <option value="rmsprop">RMSProp</option>
+        <option value="sgd">SGD</option>
+      </select>
+    </div>
+    <div class="config-item">
+      <label>Learning Rate</label>
+      <input
+        type="number"
+        step="0.001"
+        [ngModel]="learningRate"
+        (ngModelChange)="learningRateChange.emit($event); onCompileModel()"
+      />
+    </div>
+    <div class="config-item">
+      <label>Pérdida (Loss)</label>
+      <select
+        [ngModel]="lossFunction"
+        (ngModelChange)="lossFunctionChange.emit($event); onCompileModel()"
+      >
+        <option value="categoricalCrossentropy">Categorical Crossentropy</option>
+        <option value="meanSquaredError">Mean Squared Error</option>
+      </select>
+    </div>
+    <div class="config-item">
+      <label>Épocas</label>
+      <input type="number" [ngModel]="epochs" (ngModelChange)="epochsChange.emit($event)" min="1" />
+    </div>
+    <div class="config-item">
+      <label>Batch Size</label>
+      <input
+        type="number"
+        [ngModel]="batchSize"
+        (ngModelChange)="batchSizeChange.emit($event)"
+        min="8"
+      />
+    </div>
+  </div>
+
+  <div class="action-buttons-row">
+    <button
+      class="btn btn-primary"
+      (click)="onStartTraining()"
+      [disabled]="trainingProgress.isTraining || !isLoaded"
+    >
+      <i class="ti ti-player-play"></i>
+      {{ trainingProgress.isTraining ? 'Entrenando...' : 'Iniciar Entrenamiento' }}
+    </button>
+    <button
+      class="btn btn-export"
+      (click)="onExportModel()"
+      [disabled]="trainingProgress.isTraining || !trainingService.model"
+    >
+      <i class="ti ti-device-floppy"></i> Exportar Modelo
+    </button>
+  </div>
+</div>
+
+<!-- METRICS & CHARTS -->
+<div class="panel-card charts-panel">
+  <div class="panel-header">
+    <h2>Gráficas de Aprendizaje</h2>
+    <span class="live-status" *ngIf="trainingProgress.isTraining">
+      Época: {{ trainingProgress.epoch < epochs ? trainingProgress.epoch + 1 : epochs }}/{{
+        epochs
+      }}
+      @if (trainingProgress.batch > 0) {
+        | Lote: {{ trainingProgress.batch }} | Pérdida: {{ trainingProgress.loss.toFixed(4) }} |
+        Prec: {{ (trainingProgress.acc * 100).toFixed(0) }}%
+      }
+    </span>
+  </div>
+  <div class="chart-canvas-container">
+    <canvas #chartCanvas></canvas>
+  </div>
+</div>
+
+<!-- LOG TERMINAL -->
+<div class="panel-card logs-panel">
+  <h2>Registro de Consola</h2>
+  <div class="console-box scrollable">
+    @for (msg of logs; track $index) {
+      <div class="console-line">{{ msg }}</div>
+    }
+  </div>
+</div>

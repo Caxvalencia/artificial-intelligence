@@ -1,0 +1,63 @@
+<div class="app-container">
+  <!-- TOP BAR -->
+  <app-header
+    [isLoaded]="dataService.isLoaded"
+    [loadProgress]="dataService.loadProgress"
+    [backendSelection]="backendSelection"
+    [isWebGPUSupported]="trainingService.isWebGPUSupported"
+    (backendSelectionChange)="onBackendSelectionChange($event)"
+  ></app-header>
+
+  <!-- MAIN WORKSPACE LAYOUT -->
+  <div class="studio-layout">
+    <!-- LEFT SIDE: NODE WORKSPACE -->
+    <app-workspace
+      [layers]="layers"
+      [selectedLayer]="selectedLayer"
+      (layerSelected)="selectLayer($event)"
+      (layerRemoved)="removeLayer($event)"
+      (layerAdded)="addLayer($event)"
+      (presetLoaded)="loadPreset($event)"
+    ></app-workspace>
+
+    <!-- RIGHT SIDE: CONFIG PANEL & TESTING -->
+    <div class="control-and-testing-panel">
+      <!-- TABS DE NAVEGACIÓN PRINCIPAL -->
+      <div class="main-tabs-header">
+        <button
+          class="main-tab-btn"
+          [class.active]="mainTab === 'train'"
+          (click)="mainTab = 'train'"
+        >
+          <i class="ti ti-settings"></i> Entrenamiento
+        </button>
+        <button class="main-tab-btn" [class.active]="mainTab === 'test'" (click)="mainTab = 'test'">
+          <i class="ti ti-flask"></i> Pruebas (Tests)
+        </button>
+      </div>
+
+      <!-- SECCIÓN ENTRENAMIENTO -->
+      <div [class.hidden]="mainTab !== 'train'" class="tab-content-wrapper">
+        <app-training-panel
+          [layers]="layers"
+          [selectedLayer]="selectedLayer"
+          [(optimizer)]="optimizer"
+          [(learningRate)]="learningRate"
+          [(lossFunction)]="lossFunction"
+          [(epochs)]="epochs"
+          [(batchSize)]="batchSize"
+          [trainingProgress]="trainingProgress"
+          [isLoaded]="dataService.isLoaded"
+          (compileModel)="compileModel()"
+          (startTraining)="startTraining()"
+          (exportModel)="exportModel()"
+        ></app-training-panel>
+      </div>
+
+      <!-- SECCIÓN PRUEBAS -->
+      <div [class.hidden]="mainTab !== 'test'" class="tab-content-wrapper">
+        <app-testing-panel></app-testing-panel>
+      </div>
+    </div>
+  </div>
+</div>

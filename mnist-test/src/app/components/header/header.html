@@ -1,0 +1,34 @@
+<!-- TOP BAR -->
+<header class="top-bar">
+  <div class="brand">
+    <i class="ti ti-brain logo-icon"></i>
+    <h1>MNIST Flow Studio</h1>
+  </div>
+
+  <div class="status-panel">
+    <!-- Dataset Status -->
+    <div class="status-badge" [class.loaded]="isLoaded">
+      <span class="indicator"></span>
+      <span class="status-text">
+        MNIST:
+        {{ isLoaded ? 'Cargado (65k)' : 'Cargando (' + loadProgress + '%)' }}
+      </span>
+    </div>
+
+    <!-- Backend Selection -->
+    <div class="backend-selector">
+      <label for="backendSelect">Aceleración:</label>
+      <select
+        id="backendSelect"
+        [ngModel]="backendSelection"
+        (ngModelChange)="onBackendChange($event)"
+      >
+        <option value="webgpu">
+          WebGPU {{ isWebGPUSupported ? '(Recomendado)' : '(No disp.)' }}
+        </option>
+        <option value="webgl">WebGL</option>
+        <option value="cpu">CPU (Lento)</option>
+      </select>
+    </div>
+  </div>
+</header>

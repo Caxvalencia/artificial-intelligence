@@ -1,0 +1,110 @@
+<!-- IN-BROWSER TESTING SUITE -->
+<div class="panel-card test-suite-panel">
+  <div class="tab-header">
+    <button class="tab-btn" [class.active]="activeTab === 'model'" (click)="activeTab = 'model'">
+      Probar TF.js
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'hopfield'"
+      (click)="activeTab = 'hopfield'"
+    >
+      Hopfield Net
+    </button>
+  </div>
+
+  <!-- MODEL DRAWING -->
+  <div class="tab-content" [class.hidden]="activeTab !== 'model'">
+    @if (!trainingService.model) {
+      <div
+        class="warning-banner"
+        style="
+          background: rgba(244, 63, 94, 0.1);
+          border: 1px solid rgba(244, 63, 94, 0.2);
+          color: var(--accent-pink);
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-size: 11px;
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        "
+      >
+        <i class="ti ti-alert-triangle" style="font-size: 14px"></i>
+        <span
+          >El modelo no está compilado. Selecciona un preset en el lienzo de arquitectura o
+          compílalo desde la pestaña de Entrenamiento.</span
+        >
+      </div>
+    }
+    <div class="drawing-layout">
+      <div class="canvas-wrapper">
+        <canvas
+          #drawingCanvas
+          width="280"
+          height="280"
+          (mousedown)="onMouseDown($event)"
+          (mousemove)="onMouseMove($event)"
+          (mouseup)="onMouseUp()"
+          (touchstart)="onTouchStart($event)"
+          (touchmove)="onTouchMove($event)"
+          (touchend)="onTouchEnd($event)"
+        >
+        </canvas>
+        <button class="btn btn-secondary btn-xs btn-clear" (click)="clearCanvas()">
+          <i class="ti ti-eraser"></i> Limpiar
+        </button>
+      </div>
+
+      <div class="results-wrapper">
+        <h3>
+          Predicción:
+          <span class="predicted-number">{{ predictedDigit !== null ? predictedDigit : '?' }}</span>
+        </h3>
+        <div class="probability-bars">
+          @for (prob of predictions; track $index; let digit = $index) {
+            <div class="prob-row">
+              <span class="digit-lbl">{{ digit }}</span>
+              <div class="bar-bg">
+                <div class="bar-fill" [style.width.%]="prob * 100"></div>
+              </div>
+              <span class="digit-val">{{ (prob * 100).toFixed(0) }}%</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOPFIELD MEMORY -->
+  <div class="tab-content" [class.hidden]="activeTab !== 'hopfield'">
+    <div class="hopfield-suite">
+      <div class="hopfield-viewer">
+        <div class="preview-box">
+          <canvas #hopfieldCanvas width="140" height="140" class="sub-canvas"></canvas>
+          <span>Patrón Actual (28x28)</span>
+        </div>
+
+        <div class="hopfield-side-controls">
+          <div class="slider-field">
+            <label>Ruido: {{ (hopfieldNoise * 100).toFixed(0) }}%</label>
+            <input type="range" min="0" max="0.8" step="0.05" [(ngModel)]="hopfieldNoise" />
+          </div>
+          <div class="slider-field">
+            <label>Pasos: {{ hopfieldSteps }}</label>
+            <input type="number" min="1" max="25" [(ngModel)]="hopfieldSteps" />
+          </div>
+          <div class="hopfield-action-btns">
+            <button class="btn btn-secondary btn-sm" (click)="applyHopfieldNoise()">
+              <i class="ti ti-grain"></i> Añadir Ruido
+            </button>
+            <button class="btn btn-primary btn-sm" (click)="reconstructHopfield()">
+              <i class="ti ti-wand"></i> Reconstruir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
