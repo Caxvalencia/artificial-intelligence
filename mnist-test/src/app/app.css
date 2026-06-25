@@ -192,7 +192,7 @@ app-root {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1.2px, transparent 1.2px);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.193) 1.2px, transparent 1.2px);
   background-size: 24px 24px;
   pointer-events: none;
 }

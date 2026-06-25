@@ -13,6 +13,8 @@ export interface TrainingProgress {
   valLoss: number;
   valAcc: number;
   isTraining: boolean;
+  batchesPerEpoch?: number;
+  isEpochEnd?: boolean;
 }
 
 @Injectable({
@@ -160,6 +162,9 @@ export class TrainingService {
     const trainData = this.dataService.getTrainData();
     const testData = this.dataService.getTestData();
 
+    const totalSamples = trainData.xs.shape[0];
+    const batchesPerEpoch = Math.ceil(totalSamples / batchSize);
+
     this.log(
       `Iniciando entrenamiento: ${epochs} épocas, Lote: ${batchSize}. backend actual: ${tf.getBackend()}`,
     );
@@ -173,6 +178,8 @@ export class TrainingService {
         valLoss: 0,
         valAcc: 0,
         isTraining: true,
+        batchesPerEpoch,
+        isEpochEnd: false,
       });
     });
 
@@ -189,6 +196,8 @@ export class TrainingService {
                 ...current,
                 epoch: epoch + 1,
                 batch: 0,
+                batchesPerEpoch,
+                isEpochEnd: false,
               });
             });
           },
@@ -212,6 +221,8 @@ export class TrainingService {
                 batch: batch + 1,
                 loss,
                 acc,
+                batchesPerEpoch,
+                isEpochEnd: false,
               });
             });
             // Ceder control al navegador para refrescar UI y logs
@@ -250,6 +261,8 @@ export class TrainingService {
                   valLoss,
                   valAcc,
                   isTraining: true,
+                  batchesPerEpoch,
+                  isEpochEnd: true,
                 });
               });
 
@@ -272,7 +285,7 @@ export class TrainingService {
 
       const current = this.progress$.value;
       this.ngZone.run(() => {
-        this.progress$.next({ ...current, isTraining: false });
+        this.progress$.next({ ...current, isTraining: false, isEpochEnd: false });
       });
     }
   }

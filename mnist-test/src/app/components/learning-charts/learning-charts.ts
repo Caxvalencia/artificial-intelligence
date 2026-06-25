@@ -31,11 +31,10 @@ export class LearningChartsComponent implements OnInit, OnChanges {
   @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
   private chart: Chart | null = null;
   public chartData = {
-    labels: [] as string[],
-    loss: [] as number[],
-    valLoss: [] as number[],
-    acc: [] as number[],
-    valAcc: [] as number[],
+    loss: [] as { x: number; y: number }[],
+    valLoss: [] as { x: number; y: number }[],
+    acc: [] as { x: number; y: number }[],
+    valAcc: [] as { x: number; y: number }[],
   };
 
   ngOnInit() {
@@ -57,7 +56,12 @@ export class LearningChartsComponent implements OnInit, OnChanges {
   }
 
   public resetChart() {
-    this.chartData = { labels: [], loss: [], valLoss: [], acc: [], valAcc: [] };
+    this.chartData = {
+      loss: [],
+      valLoss: [],
+      acc: [],
+      valAcc: [],
+    };
     if (this.chart) {
       this.chart.destroy();
       this.chart = null;
@@ -71,7 +75,6 @@ export class LearningChartsComponent implements OnInit, OnChanges {
     this.chart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: this.chartData.labels,
         datasets: [
           {
             label: 'Pérdida (Loss)',
@@ -117,8 +120,21 @@ export class LearningChartsComponent implements OnInit, OnChanges {
         },
         scales: {
           x: {
-            ticks: { color: '#a0a0a0' },
+            type: 'linear',
+            ticks: {
+              color: '#a0a0a0',
+              callback: function(value: any) {
+                const val = Number(value);
+                if (val === 0) return '0';
+                if (Number.isInteger(val)) {
+                  return `Época ${val}`;
+                }
+                return '';
+              },
+            },
             grid: { color: '#333' },
+            min: 0,
+            max: this.epochs,
           },
           y: {
             type: 'linear',
@@ -142,25 +158,42 @@ export class LearningChartsComponent implements OnInit, OnChanges {
   }
 
   private updateChart(progress: TrainingProgress) {
-    const epochLabel = `Época ${progress.epoch}`;
-    if (this.chartData.labels.includes(epochLabel)) {
-      const idx = this.chartData.labels.indexOf(epochLabel);
-      this.chartData.loss[idx] = progress.loss;
-      this.chartData.valLoss[idx] = progress.valLoss;
-      this.chartData.acc[idx] = progress.acc;
-      this.chartData.valAcc[idx] = progress.valAcc;
-    } else {
-      this.chartData.labels.push(epochLabel);
-      this.chartData.loss.push(progress.loss);
-      this.chartData.valLoss.push(progress.valLoss);
-      this.chartData.acc.push(progress.acc);
-      this.chartData.valAcc.push(progress.valAcc);
+    if (!this.chart) {
+      this.initChart();
+    }
+
+    const batchesPerEpoch = progress.batchesPerEpoch || 938;
+    const epoch = progress.epoch;
+    const batch = progress.batch;
+
+    if (progress.isEpochEnd) {
+      const xVal = epoch;
+
+      // Añadimos el valor de validación
+      if (!this.chartData.valLoss.some((p) => p.x === xVal)) {
+        this.chartData.valLoss.push({ x: xVal, y: progress.valLoss });
+        this.chartData.valAcc.push({ x: xVal, y: progress.valAcc });
+      }
+
+      // También el punto de entrenamiento al final de la época
+      if (!this.chartData.loss.some((p) => p.x === xVal)) {
+        this.chartData.loss.push({ x: xVal, y: progress.loss });
+        this.chartData.acc.push({ x: xVal, y: progress.acc });
+      }
+    } else if (batch > 0) {
+      // Actualización intermedia por lote
+      if (batch % 10 === 0 || batch === batchesPerEpoch) {
+        const xVal = epoch - 1 + batch / batchesPerEpoch;
+
+        if (!this.chartData.loss.some((p) => p.x === xVal)) {
+          this.chartData.loss.push({ x: xVal, y: progress.loss });
+          this.chartData.acc.push({ x: xVal, y: progress.acc });
+        }
+      }
     }
 
     if (this.chart) {
       this.chart.update('none');
-    } else {
-      this.initChart();
     }
   }
 }

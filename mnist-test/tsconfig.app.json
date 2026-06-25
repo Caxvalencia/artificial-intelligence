@@ -7,6 +7,9 @@
     "types": [],
     "lib": ["es2022", "dom"]
   },
+  "angularCompilerOptions": {
+    "strictTemplates": true
+  },
   "include": [
     "src/**/*.ts"
   ],
