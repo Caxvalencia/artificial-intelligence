@@ -39,6 +39,8 @@
           (layerRemoved)="removeLayer($event)"
           (layerAdded)="addLayer($event)"
           (presetLoaded)="loadPreset($event)"
+          (connectionMade)="onConnectionMade($event.outputLayerId, $event.inputLayerId)"
+          (connectionCleared)="onConnectionCleared($event.layerId)"
         ></app-workspace>
       </div>
 

@@ -149,53 +149,174 @@ export class HopfieldNetwork {
 
 export interface LayerDescription {
   id: string;
-  type: 'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'reshape' | 'attention' | 'dropout';
+  type:
+    | 'dense'
+    | 'conv2d'
+    | 'maxPool2d'
+    | 'flatten'
+    | 'reshape'
+    | 'attention'
+    | 'dropout'
+    | 'concatenate'
+    | 'add';
   config: any;
   x?: number;
   y?: number;
+  inputs?: string[];
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class ModelBuilderService {
-  buildModel(layersConfig: LayerDescription[]): tf.Sequential {
-    const model = tf.sequential();
+  buildModel(layersConfig: LayerDescription[]): tf.LayersModel {
+    if (layersConfig.length === 0) {
+      throw new Error('La arquitectura no tiene capas.');
+    }
 
-    layersConfig.forEach((layerConf, index) => {
-      const isFirst = index === 0;
-      const conf = { ...layerConf.config };
+    // 1. Instanciar el tensor de entrada principal [batch, 784]
+    const mainInput = tf.input({ shape: [784] });
 
-      switch (layerConf.type) {
+    // 2. Resolver recursivamente con detección de ciclos y almacenamiento caché
+    const instantiating = new Set<string>();
+    const computed = new Map<string, tf.SymbolicTensor>();
+
+    // Registrar la clase de atención por si no se ha registrado
+    try {
+      tf.serialization.registerClass(SelfAttentionLayer);
+    } catch (e) {}
+
+    const resolveLayerTensor = (layerId: string): tf.SymbolicTensor => {
+      if (computed.has(layerId)) {
+        return computed.get(layerId)!;
+      }
+      if (instantiating.has(layerId)) {
+        throw new Error('Se ha detectado un ciclo cerrado en la arquitectura.');
+      }
+
+      instantiating.add(layerId);
+
+      const layer = layersConfig.find((l) => l.id === layerId);
+      if (!layer) {
+        throw new Error(`Capa con ID ${layerId} no encontrada.`);
+      }
+
+      // Resolver los tensores de entrada (padres)
+      const parentTensors: tf.SymbolicTensor[] = [];
+      const layerIndex = layersConfig.indexOf(layer) + 1;
+      
+      if (layer.inputs && layer.inputs.length > 0) {
+        for (const parentId of layer.inputs) {
+          parentTensors.push(resolveLayerTensor(parentId));
+        }
+      } else {
+        // Si es una capa convolucional o de reducción espacial y no tiene entradas,
+        // no tiene sentido conectarla a la entrada principal plana 1D de 784, lanzamos error claro.
+        if (layer.type === 'conv2d' || layer.type === 'maxPool2d') {
+          throw new Error(
+            `La Capa #${layerIndex} (${layer.type.toUpperCase()}) está desconectada. Conéctala después de un Reshape para que reciba una forma tridimensional (2D con canales) compatible.`
+          );
+        }
+        // Si no tiene entradas conectadas, se conecta al tensor de entrada principal
+        parentTensors.push(mainInput);
+      }
+
+      let tfLayer: tf.layers.Layer;
+      // Inyectar un nombre descriptivo basado en el orden en el lienzo
+      const conf = { 
+        ...layer.config, 
+        name: `${layer.type}_Capa_${layerIndex}`
+      };
+
+      switch (layer.type) {
         case 'dense':
-          if (isFirst) conf.inputShape = [784];
-          model.add(tf.layers.dense(conf));
+          tfLayer = tf.layers.dense(conf);
           break;
         case 'conv2d':
-          if (isFirst) conf.inputShape = [28, 28, 1];
-          model.add(tf.layers.conv2d(conf));
+          tfLayer = tf.layers.conv2d(conf);
           break;
         case 'maxPool2d':
-          model.add(tf.layers.maxPooling2d(conf));
+          tfLayer = tf.layers.maxPooling2d(conf);
           break;
         case 'flatten':
-          model.add(tf.layers.flatten());
+          tfLayer = tf.layers.flatten({ name: conf.name });
           break;
         case 'reshape':
-          if (isFirst) conf.inputShape = [784];
-          model.add(tf.layers.reshape(conf));
+          tfLayer = tf.layers.reshape(conf);
           break;
         case 'attention':
-          if (isFirst) conf.inputShape = [28, 28]; // sequence size = 28, features = 28
-          model.add(new SelfAttentionLayer(conf));
+          tfLayer = new SelfAttentionLayer(conf);
           break;
         case 'dropout':
-          model.add(tf.layers.dropout(conf));
+          tfLayer = tf.layers.dropout(conf);
           break;
+        case 'concatenate':
+          tfLayer = tf.layers.concatenate({ axis: conf.axis ?? -1, name: conf.name });
+          break;
+        case 'add':
+          tfLayer = tf.layers.add({ name: conf.name });
+          break;
+        default:
+          throw new Error(`Tipo de capa desconocido: ${layer.type}`);
       }
+
+      let outputTensor: tf.SymbolicTensor;
+      if (parentTensors.length === 1) {
+        outputTensor = tfLayer.apply(parentTensors[0]) as tf.SymbolicTensor;
+      } else {
+        outputTensor = tfLayer.apply(parentTensors) as tf.SymbolicTensor;
+      }
+
+      instantiating.delete(layerId);
+      computed.set(layerId, outputTensor);
+      return outputTensor;
+    };
+
+    // 3. Identificar nodos hoja (layers que no alimentan a ninguna otra)
+    const leaves = layersConfig.filter((layer) => {
+      return !layersConfig.some((other) => other.inputs?.includes(layer.id));
     });
 
-    return model;
+    if (leaves.length === 0) {
+      throw new Error('No se puede compilar: No se encontró ningún nodo final en la arquitectura.');
+    }
+
+    // El último nodo hoja en la lista se toma como el output final del modelo
+    const finalLeaf = leaves[leaves.length - 1];
+    let finalTensor: tf.SymbolicTensor;
+
+    try {
+      finalTensor = resolveLayerTensor(finalLeaf.id);
+    } catch (e: any) {
+      let shapeTrace = '\nCapas procesadas con éxito:';
+
+      computed.forEach((tensor, id) => {
+        const l = layersConfig.find((layer) => layer.id === id);
+
+        if (l) {
+          shapeTrace += `\n- Capa #${layersConfig.indexOf(l) + 1} (${l.type}): [${tensor.shape.join(', ')}]`;
+        }
+      });
+
+      let archSummary = '\n\nConexiones registradas en el lienzo:';
+      layersConfig.forEach((l, idx) => {
+        const inputsStr = l.inputs && l.inputs.length > 0
+          ? l.inputs.map(id => {
+              const pIdx = layersConfig.findIndex(p => p.id === id);
+              return pIdx !== -1 ? `#${pIdx + 1}` : `ID:${id}`;
+            }).join(', ')
+          : 'Ninguna (Entrada principal)';
+        archSummary += `\n- Capa #${idx + 1} (${l.type.toUpperCase()}): Recibe de -> [${inputsStr}]`;
+      });
+
+      throw new Error(`${e.message}${shapeTrace}${archSummary}`);
+    }
+
+    // 4. Instanciar y retornar el LayersModel funcional
+    return tf.model({
+      inputs: mainInput,
+      outputs: finalTensor,
+    });
   }
 
   getDefaultCNNConfig(): LayerDescription[] {

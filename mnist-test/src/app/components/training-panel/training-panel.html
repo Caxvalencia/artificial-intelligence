@@ -167,7 +167,7 @@
     <button
       class="btn btn-primary"
       (click)="onStartTraining()"
-      [disabled]="trainingProgress.isTraining || !isLoaded"
+      [disabled]="trainingProgress.isTraining || !isLoaded || !trainingService.model"
     >
       <i class="ti ti-player-play"></i>
       {{ trainingProgress.isTraining ? 'Entrenando...' : 'Iniciar Entrenamiento' }}
@@ -188,7 +188,7 @@
 
   <div class="console-box scrollable">
     @for (msg of logs; track $index) {
-      <div class="console-line">{{ msg }}</div>
+      <div class="console-line" [class.console-error]="msg.toLowerCase().includes('error')">{{ msg }}</div>
     }
   </div>
 </div>

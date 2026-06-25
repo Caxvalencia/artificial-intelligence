@@ -91,11 +91,12 @@ export class App implements OnInit {
       presetLayers = this.builderService.getDefaultInnovativeConfig();
     }
 
-    // Set horizontal sequence layout coordinates
+    // Set horizontal sequence layout coordinates and linear connections
     this.layers = presetLayers.map((layer, i) => ({
       ...layer,
       x: 50 + i * 210,
       y: 120 + (i % 2) * 50,
+      inputs: i > 0 ? [presetLayers[i - 1].id] : [],
     }));
 
     // Auto-select first node
@@ -109,7 +110,7 @@ export class App implements OnInit {
   }
 
   addLayer(
-    type: 'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'reshape' | 'attention' | 'dropout',
+    type: 'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'reshape' | 'attention' | 'dropout' | 'concatenate' | 'add',
   ) {
     const id = Date.now().toString();
     let config: any = {};
@@ -139,14 +140,44 @@ export class App implements OnInit {
       case 'attention':
         config = { units: 32 };
         break;
+      case 'concatenate':
+        config = { axis: -1 };
+        break;
+      case 'add':
+        config = {};
+        break;
     }
 
-    const lastNode = this.layers[this.layers.length - 1];
-    const newX = lastNode ? (lastNode.x || 0) + 210 : 50;
-    const newY = lastNode ? lastNode.y || 120 : 120;
+    let newX = 50;
+    let newY = 120;
+    let insertIndex = this.layers.length;
+    let inputs: string[] = [];
 
-    const newLayer: LayerDescription = { id, type, config, x: newX, y: newY };
-    this.layers.push(newLayer);
+    if (this.selectedLayer) {
+      const selectedIndex = this.layers.findIndex((l) => l.id === this.selectedLayer!.id);
+      if (selectedIndex !== -1) {
+        insertIndex = selectedIndex + 1;
+        const selNode = this.layers[selectedIndex];
+        newX = (selNode.x || 0) + 210;
+        newY = selNode.y || 120;
+        inputs = [selNode.id];
+
+        // Shift subsequent nodes
+        for (let i = insertIndex; i < this.layers.length; i++) {
+          if (this.layers[i].x !== undefined) {
+            this.layers[i].x! += 210;
+          }
+        }
+      }
+    } else if (this.layers.length > 0) {
+      const lastNode = this.layers[this.layers.length - 1];
+      newX = (lastNode.x || 0) + 210;
+      newY = lastNode.y || 120;
+      inputs = [lastNode.id];
+    }
+
+    const newLayer: LayerDescription = { id, type, config, x: newX, y: newY, inputs };
+    this.layers.splice(insertIndex, 0, newLayer);
     this.selectedLayer = newLayer;
     this.compileModel();
   }
@@ -155,12 +186,48 @@ export class App implements OnInit {
     const removed = this.layers[index];
     this.layers.splice(index, 1);
 
+    // Clean up connections pointing to the removed node
+    this.layers.forEach((layer) => {
+      if (layer.inputs) {
+        layer.inputs = layer.inputs.filter((id) => id !== removed.id);
+      }
+    });
+
     // Auto-select adjacent layer if current selected is deleted
     if (this.selectedLayer?.id === removed.id) {
       this.selectedLayer = this.layers.length > 0 ? this.layers[Math.max(0, index - 1)] : null;
     }
 
     this.compileModel();
+  }
+
+  onConnectionMade(outputId: string, inputId: string) {
+    const inputLayer = this.layers.find((l) => l.id === inputId);
+    if (!inputLayer) return;
+
+    if (!inputLayer.inputs) {
+      inputLayer.inputs = [];
+    }
+
+    // Si es una capa de fusión, permitir múltiples entradas.
+    // De lo contrario, reemplazar la conexión actual por la nueva.
+    if (inputLayer.type === 'concatenate' || inputLayer.type === 'add') {
+      if (!inputLayer.inputs.includes(outputId)) {
+        inputLayer.inputs.push(outputId);
+      }
+    } else {
+      inputLayer.inputs = [outputId];
+    }
+
+    this.compileModel();
+  }
+
+  onConnectionCleared(layerId: string) {
+    const layer = this.layers.find((l) => l.id === layerId);
+    if (layer) {
+      layer.inputs = [];
+      this.compileModel();
+    }
   }
 
   selectLayer(layer: LayerDescription) {

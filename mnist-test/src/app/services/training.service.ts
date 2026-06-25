@@ -107,6 +107,8 @@ export class TrainingService {
     }
   }
 
+  private compileQueue: Promise<void> = Promise.resolve();
+
   // Compile the TFJS architecture
   async compileModel(
     layers: LayerDescription[],
@@ -114,43 +116,50 @@ export class TrainingService {
     lr: number,
     lossName: string,
   ) {
-    await tf.ready();
-    if (this.model) {
-      this.model.dispose();
-    }
-
-    this.log('Compilando modelo dinámico...');
-    try {
-      this.model = this.builderService.buildModel(layers);
-
-      let optimizer: tf.Optimizer;
-      if (optimizerName === 'adam') {
-        optimizer = tf.train.adam(lr);
-      } else if (optimizerName === 'rmsprop') {
-        optimizer = tf.train.rmsprop(lr);
-      } else {
-        optimizer = tf.train.sgd(lr);
+    this.compileQueue = this.compileQueue.then(async () => {
+      await tf.ready();
+      if (this.model) {
+        this.model.dispose();
+        this.model = null;
       }
 
-      const loss =
-        lossName === 'categoricalCrossentropy' ? 'categoricalCrossentropy' : 'meanSquaredError';
+      this.log('Compilando modelo dinámico...');
+      try {
+        this.model = this.builderService.buildModel(layers);
 
-      this.model.compile({
-        optimizer,
-        loss,
-        metrics: ['accuracy'],
-      });
+        let optimizer: tf.Optimizer;
+        if (optimizerName === 'adam') {
+          optimizer = tf.train.adam(lr);
+        } else if (optimizerName === 'rmsprop') {
+          optimizer = tf.train.rmsprop(lr);
+        } else {
+          optimizer = tf.train.sgd(lr);
+        }
 
-      this.model.summary();
-      this.log('Modelo compilado con éxito. Listo para entrenamiento.');
-    } catch (e: any) {
-      this.log(`Error de compilación: ${e.message}`);
-      throw e;
-    }
+        const loss =
+          lossName === 'categoricalCrossentropy' ? 'categoricalCrossentropy' : 'meanSquaredError';
+
+        this.model.compile({
+          optimizer,
+          loss,
+          metrics: ['accuracy'],
+        });
+
+        this.model.summary();
+        this.log('Modelo compilado con éxito. Listo para entrenamiento.');
+      } catch (e: any) {
+        this.log(`Error de compilación: ${e.message}`);
+        throw e;
+      }
+    });
+    return this.compileQueue;
   }
 
   // Train the model
   async trainModel(epochs: number, batchSize: number, valSplit = 0.15) {
+    // Esperar a que terminen las compilaciones en cola
+    await this.compileQueue;
+
     if (!this.model) {
       this.log('Error: No se ha compilado el modelo.');
       return;

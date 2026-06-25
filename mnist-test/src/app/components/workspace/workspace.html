@@ -56,6 +56,7 @@
   </div>
 
   <div
+    #workspaceEl
     class="node-workspace"
     [class.panning]="isPanning"
     (mousedown)="startWorkspacePan($event)"
@@ -74,10 +75,13 @@
     >
       <!-- SVG CONNECTIONS OVERLAY -->
       <svg class="svg-connections-overlay">
-        @for (layer of layers; track layer.id; let idx = $index) {
-          @if (idx < layers.length - 1) {
-            <path [attr.d]="getConnectionPath(idx)" class="connection-line" />
+        @for (layer of layers; track layer.id) {
+          @for (parentId of layer.inputs || []; track parentId) {
+            <path [attr.d]="getNodeConnectionPath(parentId, layer.id)" class="connection-line" />
           }
+        }
+        @if (activeDragConnection) {
+          <path [attr.d]="getTempConnectionPath()" class="connection-line-temp" />
         }
       </svg>
 
@@ -88,9 +92,12 @@
           [style.left.px]="layer.x"
           [style.top.px]="layer.y"
           [class.selected]="selectedLayer?.id === layer.id"
+          [class.drag-target]="hoverTargetNode?.id === layer.id"
           [class.node-dense]="layer.type === 'dense'"
           [class.node-conv]="layer.type === 'conv2d'"
           [class.node-attention]="layer.type === 'attention'"
+          [class.node-merge]="layer.type === 'concatenate' || layer.type === 'add'"
+          [attr.data-node-id]="layer.id"
           [attr.data-tooltip]="getNodeTooltip(layer.type)"
           (mousedown)="selectLayer(layer); $event.stopPropagation()"
         >
@@ -111,6 +118,10 @@
                 <i class="ti ti-dimensions"></i>
               } @else if (layer.type === 'attention') {
                 <i class="ti ti-sparkles"></i>
+              } @else if (layer.type === 'concatenate') {
+                <i class="ti ti-git-merge"></i>
+              } @else if (layer.type === 'add') {
+                <i class="ti ti-circle-plus"></i>
               }
             </span>
             <span class="node-title">{{ layer.type.toUpperCase() }}</span>
@@ -138,13 +149,17 @@
                 1D Output
               } @else if (layer.type === 'reshape') {
                 Shape: [{{ layer.config.targetShape.join(',') }}]
+              } @else if (layer.type === 'concatenate') {
+                Eje: {{ layer.config.axis ?? -1 }} (Fusión)
+              } @else if (layer.type === 'add') {
+                Suma Tensors
               }
             </span>
           </div>
 
           <!-- Input and Output visual ports -->
-          <div class="port port-input"></div>
-          <div class="port port-output"></div>
+          <div class="port port-input" (mousedown)="startConnectionDrag($event, layer, 'input'); $event.stopPropagation()"></div>
+          <div class="port port-output" (mousedown)="startConnectionDrag($event, layer, 'output'); $event.stopPropagation()"></div>
         </div>
       }
     </div>
@@ -199,7 +214,7 @@
       <button
         class="btn btn-secondary btn-sm"
         (click)="addLayer('dropout')"
-        data-tooltip="Capa de Regularización. Apaga neuronas aleatoriamente en entrenamiento para evitar el sobreajuste (overfitting)."
+        data-tooltip="Capa de Regularización. Apaga neuronas al azar en entrenamiento para evitar el sobreajuste (overfitting)."
       >
         <i class="ti ti-droplet"></i> Dropout
       </button>
@@ -209,6 +224,22 @@
         data-tooltip="Capa de Autoatención de consulta-clave-valor (Self-Attention). Relaciona dinámicamente diferentes regiones."
       >
         <i class="ti ti-sparkles"></i> Attention
+      </button>
+      <button
+        class="btn btn-secondary btn-sm"
+        style="border-color: var(--accent-gold); color: var(--accent-gold)"
+        (click)="addLayer('concatenate')"
+        data-tooltip="Capa de Concatenación. Une múltiples tensores entrantes a lo largo del último eje de dimensiones."
+      >
+        <i class="ti ti-git-merge"></i> Concatenar
+      </button>
+      <button
+        class="btn btn-secondary btn-sm"
+        style="border-color: #10b981; color: #10b981"
+        (click)="addLayer('add')"
+        data-tooltip="Capa de Suma. Realiza la suma de tensores elemento a elemento (deben tener exactamente la misma forma)."
+      >
+        <i class="ti ti-circle-plus"></i> Sumar
       </button>
     </div>
   </div>

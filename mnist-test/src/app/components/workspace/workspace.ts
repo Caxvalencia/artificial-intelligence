@@ -5,8 +5,11 @@ import {
   Output,
   HostListener,
   ViewEncapsulation,
+  ViewChild,
+  ElementRef,
+  inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { LayerDescription } from '../../services/model-builder.service';
 
 @Component({
@@ -17,17 +20,23 @@ import { LayerDescription } from '../../services/model-builder.service';
   encapsulation: ViewEncapsulation.None,
 })
 export class WorkspaceComponent {
+  private document = inject(DOCUMENT);
+
   @Input() layers: LayerDescription[] = [];
   @Input() selectedLayer: LayerDescription | null = null;
 
   @Output() layerSelected = new EventEmitter<LayerDescription>();
   @Output() layerRemoved = new EventEmitter<number>();
   @Output() layerAdded = new EventEmitter<
-    'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'dropout' | 'attention'
+    'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'dropout' | 'attention' | 'concatenate' | 'add'
   >();
   @Output() presetLoaded = new EventEmitter<
     'cnn' | 'dense' | 'transformer' | 'hybrid' | 'innovative'
   >();
+  @Output() connectionMade = new EventEmitter<{ outputLayerId: string; inputLayerId: string }>();
+  @Output() connectionCleared = new EventEmitter<{ layerId: string }>();
+
+  @ViewChild('workspaceEl') workspaceEl!: ElementRef<HTMLDivElement>;
 
   // Node Drag and Drop
   public activeDragNode: LayerDescription | null = null;
@@ -35,6 +44,15 @@ export class WorkspaceComponent {
   private dragStartY = 0;
   private nodeStartX = 0;
   private nodeStartY = 0;
+
+  // Connection Drag and Drop
+  public activeDragConnection: {
+    sourceLayer: LayerDescription;
+    type: 'input' | 'output';
+  } | null = null;
+  public dragConnectionX = 0;
+  public dragConnectionY = 0;
+  public hoverTargetNode: LayerDescription | null = null;
 
   // Workspace Zoom & Panning
   public zoom = 1.0;
@@ -54,6 +72,23 @@ export class WorkspaceComponent {
       const dy = e.clientY - this.dragStartY;
       this.activeDragNode.x = this.nodeStartX + dx;
       this.activeDragNode.y = this.nodeStartY + dy;
+    } else if (this.activeDragConnection) {
+      const coords = this.getWorkspaceCoords(e.clientX, e.clientY);
+      this.dragConnectionX = coords.x;
+      this.dragConnectionY = coords.y;
+
+      // Find hover node target
+      const element = this.document.elementFromPoint(e.clientX, e.clientY);
+      const nodeCard = element?.closest('.node-card');
+      const nodeId = nodeCard?.getAttribute('data-node-id');
+      const target = this.layers.find((l) => l.id === nodeId) || null;
+
+      // Prevent connecting to self
+      if (target && target.id !== this.activeDragConnection.sourceLayer.id) {
+        this.hoverTargetNode = target;
+      } else {
+        this.hoverTargetNode = null;
+      }
     } else if (this.isPanning) {
       const dx = e.clientX - this.panStartX;
       const dy = e.clientY - this.panStartY;
@@ -64,7 +99,36 @@ export class WorkspaceComponent {
 
   @HostListener('document:mouseup')
   onWorkspaceMouseUp() {
+    if (this.activeDragConnection) {
+      const source = this.activeDragConnection.sourceLayer;
+      const target = this.hoverTargetNode;
+
+      if (target) {
+        let outputLayerId: string | null = null;
+        let inputLayerId: string | null = null;
+
+        if (this.activeDragConnection.type === 'output') {
+          outputLayerId = source.id;
+          inputLayerId = target.id;
+        } else {
+          outputLayerId = target.id;
+          inputLayerId = source.id;
+        }
+
+        if (outputLayerId && inputLayerId) {
+          this.connectionMade.emit({ outputLayerId, inputLayerId });
+        }
+      } else {
+        // Soltado sobre espacio vacío: desconectar
+        if (this.activeDragConnection.type === 'input') {
+          this.connectionCleared.emit({ layerId: source.id });
+        }
+      }
+    }
+
     this.activeDragNode = null;
+    this.activeDragConnection = null;
+    this.hoverTargetNode = null;
     this.isPanning = false;
   }
 
@@ -77,6 +141,53 @@ export class WorkspaceComponent {
     this.layerSelected.emit(layer);
     e.stopPropagation();
     e.preventDefault();
+  }
+
+  startConnectionDrag(e: MouseEvent, layer: LayerDescription, type: 'input' | 'output') {
+    this.activeDragConnection = {
+      sourceLayer: layer,
+      type: type,
+    };
+    const coords = this.getWorkspaceCoords(e.clientX, e.clientY);
+    this.dragConnectionX = coords.x;
+    this.dragConnectionY = coords.y;
+    this.hoverTargetNode = null;
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
+  private getWorkspaceCoords(clientX: number, clientY: number): { x: number; y: number } {
+    if (!this.workspaceEl) return { x: clientX, y: clientY };
+    const rect = this.workspaceEl.nativeElement.getBoundingClientRect();
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+    return {
+      x: (localX - this.panX) / this.zoom,
+      y: (localY - this.panY) / this.zoom,
+    };
+  }
+
+  getTempConnectionPath(): string {
+    if (!this.activeDragConnection) return '';
+    const node = this.activeDragConnection.sourceLayer;
+    const w = 180;
+    const h = 76;
+
+    let x1 = 0;
+    let y1 = 0;
+    if (this.activeDragConnection.type === 'output') {
+      x1 = (node.x || 0) + w;
+      y1 = (node.y || 0) + h / 2;
+    } else {
+      x1 = node.x || 0;
+      y1 = (node.y || 0) + h / 2;
+    }
+
+    const x2 = this.dragConnectionX;
+    const y2 = this.dragConnectionY;
+
+    const dx = Math.max(40, Math.abs(x2 - x1) * 0.5);
+    return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
   }
 
   startWorkspacePan(e: MouseEvent) {
@@ -158,7 +269,7 @@ export class WorkspaceComponent {
     this.layerRemoved.emit(index);
   }
 
-  addLayer(type: 'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'dropout' | 'attention') {
+  addLayer(type: 'dense' | 'conv2d' | 'maxPool2d' | 'flatten' | 'dropout' | 'attention' | 'concatenate' | 'add') {
     this.layerAdded.emit(type);
   }
 
@@ -167,9 +278,9 @@ export class WorkspaceComponent {
     this.resetView(); // Local reset
   }
 
-  getConnectionPath(idx: number): string {
-    const nodeA = this.layers[idx];
-    const nodeB = this.layers[idx + 1];
+  getNodeConnectionPath(parentId: string, childId: string): string {
+    const nodeA = this.layers.find((l) => l.id === parentId);
+    const nodeB = this.layers.find((l) => l.id === childId);
     if (!nodeA || !nodeB) return '';
 
     const w = 180; // Node width
@@ -201,6 +312,10 @@ export class WorkspaceComponent {
         return 'Capa Reshape: Redefinición dimensional. Cambia la forma espacial del tensor (ej. de vector 1D a grilla 2D/3D).';
       case 'attention':
         return 'Capa Attention: Autoatención atencional. Relaciona dinámicamente la importancia de partes distantes del tensor.';
+      case 'concatenate':
+        return 'Capa Concatenate: Une múltiples tensores entrantes a lo largo del último eje (e.g. combina características de diferentes ramas).';
+      case 'add':
+        return 'Capa Add: Suma elemento a elemento múltiples tensores entrantes (deben tener exactamente las mismas dimensiones).';
       default:
         return '';
     }
