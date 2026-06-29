@@ -1,59 +1,124 @@
-# MnistApp
+# MNIST Test
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.0.
+Aplicación Angular para construir, entrenar y probar modelos de clasificación
+MNIST con TensorFlow.js desde una interfaz visual.
 
-## Development server
+La app es independiente del paquete TypeScript de la raíz. Sirve como laboratorio
+web para experimentar con `tf.LayersModel`, backends del navegador y arquitecturas
+visuales basadas en nodos.
 
-To start a local development server, run:
+## Requisitos
 
-```bash
-ng serve
-```
+- Node.js 22 o superior.
+- pnpm 10.33.0 o compatible.
+- Navegador con soporte para Canvas y WebGL.
+- WebGPU opcional para aceleración cuando el navegador lo permita.
+- Conexión de red para descargar MNIST desde `learnjs-data`.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Comandos
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Instala dependencias:
 
 ```bash
-ng generate --help
+pnpm install
 ```
 
-## Building
-
-To build the project run:
+Levanta el servidor de desarrollo:
 
 ```bash
-ng build
+pnpm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Abre `http://localhost:4200/`.
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Compila la app:
 
 ```bash
-ng test
+pnpm build
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+Ejecuta pruebas:
 
 ```bash
-ng e2e
+pnpm test
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Comprueba formato:
 
-## Additional Resources
+```bash
+pnpm format:check
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Funcionalidades
+
+- Lienzo visual para componer arquitecturas con nodos.
+- Conexiones manuales entre capas, incluyendo ramas con `concatenate` y `add`.
+- Zoom, pan y restablecimiento de vista.
+- Presets de arquitectura:
+  - `Flow CNN`: red convolucional base para imágenes 28x28.
+  - `Flow MLP`: perceptrón multicapa denso.
+  - `Flow Attention`: reshape secuencial con autoatención.
+  - `Flow Híbrido Óptimo`: convoluciones locales más autoatención.
+  - `Flow ViT Parches`: enfoque tipo Vision Transformer compacto por parches.
+- Capas disponibles: `dense`, `conv2d`, `maxPool2d`, `flatten`, `reshape`,
+  `attention`, `dropout`, `concatenate` y `add`.
+- Panel de hiperparámetros con optimizador, learning rate, pérdida, épocas y
+  batch size.
+- Backend TensorFlow.js seleccionable entre WebGPU, WebGL y CPU.
+- Métricas de entrenamiento en tiempo real y gráficas de aprendizaje.
+- Exportación del modelo entrenado mediante `downloads://mnist-custom-model`.
+- Panel de pruebas para dibujar dígitos y ver probabilidades por clase.
+- Red de Hopfield para añadir ruido y reconstruir patrones 28x28.
+
+## Datos
+
+`MnistDataService` descarga:
+
+- `mnist_images.png`
+- `mnist_labels_uint8`
+
+desde `https://storage.googleapis.com/learnjs-data/model-builder/`.
+
+El dataset contiene 65 000 ejemplos. La app usa una división aproximada de
+5/6 para entrenamiento y 1/6 para prueba, normaliza píxeles a `[0, 1]` y entrega
+labels one-hot de 10 clases.
+
+## Backends
+
+`TrainingService` intenta inicializar WebGPU si está registrado y disponible en
+`navigator.gpu`. Si falla, usa WebGL; si WebGL tampoco inicializa, cae a CPU.
+
+Desde la UI se puede cambiar entre:
+
+- `webgpu`
+- `webgl`
+- `cpu`
+
+## Estructura
+
+```text
+src/app/
+├── components/
+│   ├── header/             # Estado de datos y selector de backend
+│   ├── learning-charts/    # Gráficas de métricas
+│   ├── testing-panel/      # Canvas de dibujo y Hopfield
+│   ├── training-panel/     # Parámetros, acciones y logs
+│   └── workspace/          # Lienzo de arquitectura
+├── services/
+│   ├── mnist-data.service.ts      # Descarga y batching del dataset
+│   ├── model-builder.service.ts   # Construcción funcional de modelos TFJS
+│   └── training.service.ts        # Backend, entrenamiento, predicción y exportación
+├── app.html
+├── app.css
+└── app.ts
+```
+
+## Notas de uso
+
+- El modelo se recompila cuando cambian capas o parámetros estructurales.
+- `conv2d` y `maxPool2d` necesitan recibir tensores 3D; normalmente deben ir
+  después de una capa `reshape` con forma `[28, 28, 1]`.
+- Las capas `concatenate` y `add` aceptan múltiples entradas; el resto reemplaza
+  la conexión previa por la nueva conexión.
+- Para clasificación MNIST, la salida final debería tener 10 unidades con
+  activación `softmax` cuando se usa `categoricalCrossentropy`.

@@ -1,13 +1,44 @@
-# Artificial Intelligence
+<div align="center">
+  <img src="docs/assets/artificial-intelligence-logo.svg" alt="Artificial Intelligence Logo" width="520" />
+  <h1>Artificial Intelligence</h1>
+  <p><b>Redes neuronales educativas en TypeScript con demos web y pruebas TensorFlow.js</b></p>
 
-Implementación educativa de algoritmos básicos de redes neuronales en TypeScript.
-El proyecto incluye un perceptrón para clasificación lineal, una red multicapa
-entrenada mediante backpropagation, pruebas con TensorFlow.js y demos para el
-navegador.
+  <p>
+    <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/badge/Node.js-%3E%3D22-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js" />
+    </a>
+    <a href="https://www.typescriptlang.org/" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/badge/TypeScript-v5.9-blue?style=flat-square&logo=typescript" alt="TypeScript" />
+    </a>
+    <a href="https://pnpm.io/" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/badge/pnpm-v10.33-orange?style=flat-square&logo=pnpm" alt="pnpm" />
+    </a>
+    <a href="https://www.tensorflow.org/js" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/badge/TensorFlow.js-v4.22-ff6f00?style=flat-square&logo=tensorflow" alt="TensorFlow.js" />
+    </a>
+    <a href="https://angular.dev/" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/badge/MNIST%20demo-Angular%2021-red?style=flat-square&logo=angular" alt="Angular MNIST demo" />
+    </a>
+  </p>
+</div>
+
+---
+
+**Artificial Intelligence** es una implementación educativa de algoritmos
+básicos de redes neuronales en TypeScript. El proyecto incluye un perceptrón
+para clasificación lineal, una red multicapa entrenada mediante
+backpropagation, pruebas con TensorFlow.js y demos para el navegador.
+
+La librería permite experimentar con compuertas lógicas, fronteras de decisión,
+funciones de activación, entrenamiento determinista, importación y exportación
+de modelos, además de una app Angular para validar flujos de entrenamiento con
+MNIST.
 
 > Este repositorio está orientado al aprendizaje y la experimentación. No está
 > preparado como paquete publicado ni pretende reemplazar librerías de machine
 > learning para producción.
+
+---
 
 ## Características
 
@@ -17,6 +48,8 @@ navegador.
 - Importación y exportación de modelos entrenados.
 - Bundle UMD para ejecutar las demos en el navegador.
 - Suite de pruebas en TypeScript y ejemplo equivalente con TensorFlow.js.
+- App Angular de experimentación con MNIST, TensorFlow.js, WebGPU/WebGL/CPU y
+  arquitecturas visuales configurables.
 
 ## Requisitos
 
@@ -54,6 +87,16 @@ Los archivos compilados se generan en:
 
 - `dist/bundle.js`: bundle principal.
 - `demo/dist/bundle.js`: bundle utilizado por las demos.
+
+Para ejecutar la app visual de MNIST:
+
+```bash
+cd mnist-test
+pnpm install
+pnpm start
+```
+
+Después abre `http://localhost:4200/`.
 
 ## Uso rápido
 
@@ -128,6 +171,33 @@ for (const sample of dataset) {
 La primera llamada a `addLayer` crea la primera capa entrenable. El tamaño de la
 entrada se infiere a partir de cada muestra del dataset; no debe añadirse una
 capa específica para la entrada.
+
+## App visual MNIST
+
+La carpeta `mnist-test/` contiene una aplicación Angular independiente para
+probar TensorFlow.js en el navegador con el dataset MNIST. No usa directamente
+la clase `Backpropagation` del paquete raíz; funciona como laboratorio visual
+para construir modelos `tf.LayersModel`.
+
+Incluye:
+
+- Lienzo de arquitectura con nodos conectables y zoom/pan.
+- Presets `Flow CNN`, `Flow MLP`, `Flow Attention`, `Flow Híbrido Óptimo` y
+  `Flow ViT Parches`.
+- Capas `dense`, `conv2d`, `maxPool2d`, `flatten`, `reshape`, `attention`,
+  `dropout`, `concatenate` y `add`.
+- Configuración de optimizador (`adam`, `rmsprop`, `sgd`), learning rate,
+  función de pérdida, épocas y batch size.
+- Selección de backend TensorFlow.js entre WebGPU, WebGL y CPU, con fallback
+  automático cuando WebGPU no está disponible.
+- Carga automática de MNIST desde los assets públicos de `learnjs-data`.
+- Gráficas de aprendizaje, consola de entrenamiento, exportación del modelo a
+  descargas y panel para dibujar dígitos y ver probabilidades.
+- Red de Hopfield entrenada con patrones representativos de MNIST para añadir
+  ruido y reconstruir dígitos.
+
+Consulta [`mnist-test/README.md`](mnist-test/README.md) para los comandos y la
+estructura específica de esta app.
 
 ## API pública
 
@@ -209,6 +279,17 @@ new Backpropagation({ epochs: 2000, seed: 7 }).addLayer(3).addLayer(2).learn(dat
 Las activaciones y actualizaciones también se comprueban durante el
 entrenamiento. Si una suma, pérdida, peso o umbral deja de ser finito, el proceso
 falla explícitamente en lugar de continuar con valores `NaN` o infinitos.
+
+Notas de configuración:
+
+- `epochs` acepta `0` para inicializar historial sin ejecutar entrenamiento.
+- `learningRate` debe ser un número finito positivo.
+- `momentum` debe estar en el rango `[0, 1)`.
+- `seed`, cuando se define, debe ser un entero y controla inicialización y
+  mezcla para resultados reproducibles.
+- `patience` debe ser un entero positivo y se evalúa contra mejoras estrictas de
+  pérdida.
+- `targetLoss` debe ser un número finito no negativo.
 
 ### Funciones de activación
 
@@ -305,11 +386,34 @@ Las carpetas `demo/perceptron-graficas-de-datos/` y `demo/perceptron-red/`
 contienen experimentos históricos que usan partes de una API anterior. Se
 conservan como referencia, pero no forman parte de las demos mantenidas.
 
+## App Angular MNIST
+
+La app vive en `mnist-test/` y tiene sus propias dependencias, lockfile y
+scripts:
+
+| Comando                              | Descripción                                     |
+| ------------------------------------ | ----------------------------------------------- |
+| `cd mnist-test && pnpm start`        | Sirve la app en `http://localhost:4200/`.       |
+| `cd mnist-test && pnpm build`        | Compila la aplicación Angular.                  |
+| `cd mnist-test && pnpm test`         | Ejecuta las pruebas configuradas por Angular.   |
+| `cd mnist-test && pnpm format`       | Formatea `src/**/*.{ts,html,css}` con Prettier. |
+| `cd mnist-test && pnpm format:check` | Comprueba formato sin modificar archivos.       |
+
+La app descarga MNIST desde Google Cloud Storage al arrancar. Necesita conexión
+de red y un navegador compatible con Canvas, WebGL y, opcionalmente, WebGPU.
+
 ## Estructura del proyecto
 
 ```text
 .
+├── docs/
+│   └── assets/                   # Imagen y recursos del README
 ├── demo/                         # Demos para navegador
+├── mnist-test/                   # App Angular + TensorFlow.js para MNIST
+│   ├── src/app/components/       # Header, workspace, paneles y gráficas
+│   ├── src/app/services/         # Datos MNIST, builder TFJS y entrenamiento
+│   ├── angular.json
+│   └── package.json
 ├── src/
 │   ├── activation-functions/     # Funciones de activación y derivadas
 │   ├── tests/                    # Pruebas unitarias y ejemplo TensorFlow.js
@@ -321,7 +425,9 @@ conservan como referencia, pero no forman parte de las demos mantenidas.
 │   ├── types.ts                  # Contratos públicos
 │   └── index.ts                  # API pública
 ├── package.json
+├── patches/                      # Patch local de @tensorflow/tfjs-node
 ├── pnpm-lock.yaml
+├── PRUEBAS.md                    # Documentación detallada de la suite
 ├── tsconfig.json
 └── webpack.config.js
 ```
@@ -352,6 +458,16 @@ pnpm format:check
 pnpm test
 pnpm production
 pnpm audit
+```
+
+Para validar también la app Angular:
+
+```bash
+cd mnist-test
+pnpm install --frozen-lockfile
+pnpm format:check
+pnpm test
+pnpm build
 ```
 
 Las pruebas principales cubren:

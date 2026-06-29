@@ -1,0 +1,48 @@
+<svg width="780" height="228" viewBox="0 0 780 228" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Artificial Intelligence Logo</title>
+  <desc id="desc">Dark rounded banner with a connected neural network icon and the Artificial Intelligence project name.</desc>
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="780" y2="228" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101828"/>
+      <stop offset="0.48" stop-color="#121A2F"/>
+      <stop offset="1" stop-color="#172033"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="106" y1="53" x2="250" y2="178" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/>
+      <stop offset="0.5" stop-color="#A78BFA"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <filter id="glow" x="75" y="33" width="205" height="174" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feGaussianBlur in="BackgroundImageFix" stdDeviation="10"/>
+      <feComposite in2="SourceAlpha" operator="in" result="effect1_backgroundBlur_1_2"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset/>
+      <feGaussianBlur stdDeviation="12"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.219608 0 0 0 0 0.741176 0 0 0 0 0.972549 0 0 0 0.32 0"/>
+      <feBlend mode="normal" in2="effect1_backgroundBlur_1_2" result="effect2_dropShadow_1_2"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_1_2" result="shape"/>
+    </filter>
+  </defs>
+  <rect x="6" y="6" width="768" height="216" rx="22" fill="url(#panel)" stroke="#28354D" stroke-width="12"/>
+  <path d="M534 42H704" stroke="#27354C" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10"/>
+  <path d="M474 184H666" stroke="#27354C" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10"/>
+  <g filter="url(#glow)">
+    <rect x="100" y="58" width="150" height="112" rx="25" fill="#141C2E" stroke="url(#edge)" stroke-width="4"/>
+    <path d="M129 118L161 88L192 144L224 90" stroke="#7DD3FC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M129 118L192 144L224 90" stroke="#A78BFA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M161 88L224 146" stroke="#64748B" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="129" cy="118" r="13" fill="#111827" stroke="#38BDF8" stroke-width="6"/>
+    <circle cx="161" cy="88" r="13" fill="#111827" stroke="#7DD3FC" stroke-width="6"/>
+    <circle cx="192" cy="144" r="13" fill="#111827" stroke="#34D399" stroke-width="6"/>
+    <circle cx="224" cy="90" r="13" fill="#111827" stroke="#A78BFA" stroke-width="6"/>
+    <circle cx="224" cy="146" r="13" fill="#111827" stroke="#67E8F9" stroke-width="6"/>
+  </g>
+  <g>
+    <text x="294" y="94" fill="#F8FAFC" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800">Artificial</text>
+    <text x="294" y="139" fill="#CBD5E1" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800">Intelligence</text>
+    <rect x="294" y="154" width="186" height="3" rx="1.5" fill="url(#edge)"/>
+    <text x="294" y="179" fill="#7DD3FC" font-family="'SFMono-Regular', Consolas, monospace" font-size="15" font-weight="700" letter-spacing="1.4">TypeScript neural networks</text>
+  </g>
+</svg>
